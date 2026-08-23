@@ -2,19 +2,13 @@
 
 window.OUTSIGHT_CONFIG = {
 
-  /* 1. 구글 지도 키
-     웹사이트 제한: https://jekim4250-sketch.github.io/*
-     API 제한   : Maps JavaScript API, Places API (New) */
   GOOGLE_MAPS_KEY: "AIzaSyCp0ohYtoUd_gNgsi2FMTbd99pt-AmQeKM",
 
-  /* 2. Supabase (기록 동기화) — 나중에 채웁니다 */
-  SUPABASE_URL: "",
-  SUPABASE_ANON_KEY: "",
+  SUPABASE_URL: "https://gxqcvfjlrriveyijqwue.supabase.co",
+  SUPABASE_ANON_KEY: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imd4cWN2ZmpscnJpdmV5aWpxd3VlIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODc0NTE1ODgsImV4cCI6MjEwMzAyNzU4OH0.goSSMz_uuoRvwILXvQ2zzjbB1wCnCOCLcNpIXTsgpOM",
 
-  /* 3. 기록 열쇠 — GitHub Pages는 공개이므로 반드시 비워 둡니다 */
   NOTEBOOK_ID: "",
 
-  /* 4. 부가 기능 */
   STREET_VIEW: true,
   PLACE_PHOTOS: true
 };
