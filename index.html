@@ -129,6 +129,9 @@ svg text{font-family:"IBM Plex Sans KR","Apple SD Gothic Neo",system-ui,sans-ser
   .main{flex-direction:column}
   #map{height:46dvh;flex:none;position:relative}
   .panel{width:100%;border-left:none;border-top:2px solid var(--line);flex:1;min-height:0}
+  /* 장소 상세·답사 기록을 볼 때는 지도를 접고 패널이 화면을 다 씁니다 */
+  body.nomap #map{display:none}
+  body.nomap .panel{border-top:none}
 }
 
 /* ---------- panel content ---------- */
@@ -648,9 +651,20 @@ function showPlain(t){
   s.innerHTML='<textarea class="plainbox" readonly></textarea>';
   var a=s.querySelector("textarea");a.value=t;a.focus();a.select();
 }
+/* 모바일에서는 장소 상세·답사 기록을 볼 때 지도를 감춰 화면을 다 씁니다.
+   (860px 이하에서만 적용됩니다. 넓은 화면에서는 지도와 패널이 나란히 그대로입니다.) */
+var wasNoMap=false;
 function render(){
   panel.innerHTML = (current==="log") ? logPanel()
     : (selected==null ? overview(current) : detail(selected));
+  var noMap = (current==="log") || (selected!=null);
+  document.body.classList.toggle("nomap", noMap);
+  if(wasNoMap && !noMap && gmReady && window.google){
+    /* 숨겼다가 다시 보일 때는 지도에 크기가 바뀌었음을 알려야 회색으로 남지 않습니다 */
+    try{google.maps.event.trigger(map,"resize");}catch(e){}
+    setTimeout(function(){fitDay(current);},60);
+  }
+  wasNoMap=noMap;
   setSave(saveState,saveMsg);
   wire();
   panel.scrollTop=0;
