@@ -27,6 +27,7 @@
   --brand:#C22E14;
   --d1:#C22E14; --d2:#1D5A96; --d3:#855505; --d4:#0D6B4E; --d5:#63409B;
   --d1-soft:#F7E4DE; --d2-soft:#E2EAF3; --d3-soft:#F4EAD7; --d4-soft:#DCEBE3; --d5-soft:#E9E2F3;
+  --sp:#0F7382; --sp-soft:#DCEDEF;
   --ok:#0D6B4E; --warn:#855505; --bad:#C22E14;
   --radius:2px;
   --shadow:0 1px 0 rgba(20,18,15,.05);
@@ -40,6 +41,7 @@
     --brand:#FF6A4A;
     --d1:#DE4526; --d2:#2E7BD4; --d3:#A87513; --d4:#12876A; --d5:#7A50C6;
     --d1-soft:#2E1710; --d2-soft:#10233A; --d3-soft:#2C2008; --d4-soft:#0C2A22; --d5-soft:#1F1638;
+    --sp:#2FA8B8; --sp-soft:#0B2B30;
     --ok:#12876A; --warn:#A87513; --bad:#DE4526;
     --radius:2px;
     --shadow:0 1px 0 rgba(0,0,0,.5);
@@ -94,6 +96,7 @@ svg text{font-family:"IBM Plex Sans KR","Apple SD Gothic Neo",system-ui,sans-ser
 .tab[data-day="3"][aria-selected=true]{background:var(--d3)}
 .tab[data-day="4"][aria-selected=true]{background:var(--d4)}
 .tab[data-day="5"][aria-selected=true]{background:var(--d5)}
+.tab[data-day=spot][aria-selected=true]{background:var(--sp)}
 .tab[data-day=log]{border-color:var(--ink-2);background:var(--surface-2);color:var(--ink)}
 .tab[data-day=log][aria-selected=true]{background:var(--ink);color:var(--surface);border-style:solid}
 
@@ -165,6 +168,14 @@ ol.tl li:last-child{border-bottom:none}
 .row.head{cursor:default}.row.head:hover{background:none}
 .row.head .n{background:none;border:1px dashed var(--line)}
 .hasnote{width:7px;height:7px;border-radius:50%;background:var(--ok);display:inline-block;margin-left:6px}
+/* 여행 명소 — 프로그램 일정과 구분되는 표시 */
+.row .n.sp{border-radius:2px;transform:rotate(45deg)}
+.row .n.sp span{display:block;transform:rotate(-45deg)}
+.whenchip{display:inline-block;font-size:11px;font-weight:600;letter-spacing:.04em;
+  padding:2px 7px;border-radius:2px;background:var(--sp-soft);color:var(--sp);margin-left:7px;vertical-align:1px}
+.spnote{margin:16px 0 0;padding:12px 14px;border-radius:2px;background:var(--sp-soft);
+  border-left:3px solid var(--sp);font-size:13.5px;line-height:1.7;color:var(--ink-2)}
+.spnote b{color:var(--ink);font-weight:600}
 .back{display:inline-flex;align-items:center;gap:8px;background:none;border:none;cursor:pointer;
   font-size:13px;font-weight:600;letter-spacing:.04em;color:var(--muted);min-height:44px;padding:10px 18px 4px;font-family:inherit}
 .back:hover{color:var(--ink)}
@@ -282,19 +293,19 @@ a{color:var(--brand)}a:hover{color:var(--ink)}
 (function(){
 "use strict";
 var CFG=window.OUTSIGHT_CONFIG||{}, D=window.OUTSIGHT_DATA||{};
-var P=D.P||[], DAYS=D.DAYS||{};   /* D.L(도쿄 주요 명소)는 더 이상 쓰지 않습니다 */
-var COL={1:"#C22E14",2:"#1D5A96",3:"#855505",4:"#0D6B4E",5:"#63409B"};
-var COL_DARK={1:"#DE4526",2:"#2E7BD4",3:"#A87513",4:"#12876A",5:"#7A50C6"};
+var P=D.P||[], S=D.S||[], DAYS=D.DAYS||{};   /* D.L(도쿄 주요 명소)는 더 이상 쓰지 않습니다 */
+var COL={1:"#C22E14",2:"#1D5A96",3:"#855505",4:"#0D6B4E",5:"#63409B",spot:"#0F7382"};
+var COL_DARK={1:"#DE4526",2:"#2E7BD4",3:"#A87513",4:"#12876A",5:"#7A50C6",spot:"#2FA8B8"};
 if(window.matchMedia&&window.matchMedia("(prefers-color-scheme: dark)").matches)COL=COL_DARK;
-var CSSCOL={1:"var(--d1)",2:"var(--d2)",3:"var(--d3)",4:"var(--d4)",5:"var(--d5)"};
-var ORDER=["all","1","2","3","5","4","log"];
-var TABLABEL={all:"전체","1":"1일차","2":"2일차","3":"3일차","5":"4일차 A","4":"4일차 B",log:"답사 기록"};
-var TABSUB  ={"1":"9.8","2":"9.9","3":"9.10","5":"구라마에","4":"하라주쿠"};
+var CSSCOL={1:"var(--d1)",2:"var(--d2)",3:"var(--d3)",4:"var(--d4)",5:"var(--d5)",spot:"var(--sp)"};
+var ORDER=["all","1","2","3","5","4","spot","log"];
+var TABLABEL={all:"전체","1":"1일차","2":"2일차","3":"3일차","5":"4일차 A","4":"4일차 B",spot:"여행 명소",log:"답사 기록"};
+var TABSUB  ={"1":"9.8","2":"9.9","3":"9.10","5":"구라마에","4":"하라주쿠",spot:"프로그램 외"};
 var DORD={1:1,2:2,3:3,5:4,4:5};
 P.sort(function(a,b){return (DORD[a.d]-DORD[b.d])||(a.n-b.n);});
 
 var panel=document.getElementById("panelBody");
-var current="all", selected=null;
+var current="all", selected=null, selSpot=null;
 function esc(s){return String(s).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;");}
 function gmap(q){return "https://www.google.com/maps/search/?api=1&query="+encodeURIComponent(q);}
 function gdir(la,ln){return "https://www.google.com/maps/dir/?api=1&destination="+la+"%2C"+ln+"&travelmode=transit";}
@@ -420,7 +431,7 @@ function buildKML(){
 }
 
 /* ================= 구글 지도 ================= */
-var map=null, markers=[], lines={}, meMarker=null, gmReady=false, placesLib=null, svService=null;
+var map=null, markers=[], spotMarkers=[], lines={}, meMarker=null, gmReady=false, placesLib=null, svService=null;
 function loadMaps(){
   if(!CFG.GOOGLE_MAPS_KEY){
     document.getElementById("map").innerHTML='<div class="mapmsg"><div><b>구글 지도 키가 아직 없습니다.</b><br><br>'+
@@ -440,6 +451,15 @@ window.gm_authFailure=function(){
   document.getElementById("map").innerHTML='<div class="mapmsg"><b>구글 지도 인증에 실패했습니다.</b><br><br>' +
     'API 키가 잘못되었거나, Maps JavaScript API가 켜져 있지 않거나,<br>키의 도메인 제한에 이 주소가 빠져 있습니다.<br><br>SETUP.md 1단계를 다시 확인하십시오.</div>';
 };
+/* 여행 명소 마커 — 일정(원형)과 구분되도록 마름모로 그립니다 */
+function spin(dim){
+  return {
+    path:"M 0,-13 13,0 0,13 -13,0 z", scale:dim?.62:1,
+    fillColor:COL.spot, fillOpacity:dim?.3:1,
+    strokeColor:"#FCFBF8", strokeWeight:2, strokeOpacity:dim?.35:1,
+    labelOrigin:new google.maps.Point(0,0)
+  };
+}
 function pin(color,label,dim,opt){
   return {
     path:google.maps.SymbolPath.CIRCLE, scale:dim?8:12,
@@ -465,6 +485,16 @@ function initMap(){
     m.addListener("click",function(){ selected=i; setTab(String(p.d)); });
     markers.push(m);
   });
+  S.forEach(function(sp,i){
+    var m=new google.maps.Marker({
+      position:{lat:sp.lat,lng:sp.lng}, map:map, title:"여행 명소 · "+sp.name,
+      icon:spin(false), label:{text:String(sp.n),color:"#fff",fontSize:"11px",fontWeight:"700",
+        fontFamily:"IBM Plex Sans KR,system-ui,sans-serif"},
+      zIndex:60+i
+    });
+    m.addListener("click",function(){ selSpot=i; selected=null; setTab("spot"); });
+    spotMarkers.push(m);
+  });
   [1,2,3,4,5].forEach(function(d){
     var pts=P.filter(function(p){return p.d===d&&!p.opt;}).map(function(p){return {lat:p.lat,lng:p.lng};});
     if(pts.length<2)return;
@@ -476,7 +506,7 @@ function initMap(){
 function focusOn(lat,lng,z){ if(!map)return; map.panTo({lat:lat,lng:lng}); if(z&&map.getZoom()<z)map.setZoom(z); }
 function fitDay(d){
   if(!map)return;
-  var pts=(d==="all")?P:P.filter(function(p){return p.d===+d;});
+  var pts=(d==="all")?P.concat(S):(d==="spot"?S:P.filter(function(p){return p.d===+d;}));
   if(!pts.length)return;
   var b=new google.maps.LatLngBounds();
   pts.forEach(function(p){b.extend({lat:p.lat,lng:p.lng});});
@@ -484,12 +514,17 @@ function fitDay(d){
 }
 function applyDay(){
   if(!gmReady)return;
+  var isSpot=(current==="spot");
   var all=(current==="all"||current==="log");
   P.forEach(function(p,i){
-    var on=all||p.d===+current;
+    var on=(all&&!isSpot)||p.d===+current;
     markers[i].setIcon(pin(COL[p.d],String(p.n),!on,p.opt));
     markers[i].setOpacity(on?1:.45);
     markers[i].setZIndex(on?(100+i):5);
+  });
+  spotMarkers.forEach(function(m,i){
+    var on=isSpot||current==="all";
+    m.setIcon(spin(!on)); m.setOpacity(on?1:.4); m.setZIndex(on?(60+i):4);
   });
   [1,2,3,4,5].forEach(function(d){
     if(!lines[d])return;
@@ -603,6 +638,41 @@ function detail(i){
   if(p.opt)h+='<div class="warn">확정 일정이 아니라 선택 방문지입니다.</div>';
   return h+'</div>';
 }
+function spotList(){
+  var h='<div class="savechip" id="saveChip"></div>';
+  h+='<div class="phead"><span class="datechip" style="border-color:var(--sp);color:var(--sp)">프로그램 외 · 참고</span>'+
+     '<h2>도쿄 여행 명소 '+S.length+'곳</h2>'+
+     '<p>프로그램 취지와 무관하게, 일반 도쿄 여행 기준으로 고른 곳입니다. 위에서부터 우선순위입니다.</p></div>';
+  var rows="";
+  S.forEach(function(sp,i){
+    rows+='<li><button class="row" data-s="'+i+'"><span class="t">'+esc(sp.area)+'</span>'+
+      '<span class="n sp" style="background:var(--sp)"><span>'+sp.n+'</span></span>'+
+      '<span class="body"><strong>'+esc(sp.name)+'<span class="whenchip">'+esc(sp.when)+'</span></strong>'+
+      '<em>'+esc(sp.one)+'</em></span></button></li>';
+  });
+  return h+'<ol class="tl">'+rows+'</ol>'+
+    '<div class="dt"><div class="spnote"><b>답사 일정이 아닙니다.</b> 관찰 질문도 기록도 없습니다. '+
+    '빈 시간에 무엇을 넣을지 고를 때만 쓰십시오. 요금과 예약 조건은 자주 바뀌니 가시기 전 공식 사이트를 확인하시기 바랍니다.</div></div>';
+}
+function spotDetail(i){
+  var sp=S[i];
+  var h='<div class="savechip" id="saveChip"></div>';
+  h+='<button class="back" id="backBtn">← 여행 명소 목록으로</button><div class="dt">';
+  h+='<div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">'+
+     '<span class="dchip" style="background:var(--sp-soft);color:var(--sp)">우선순위 '+sp.n+' · '+esc(sp.area)+'</span>'+
+     '<span class="dchip" style="background:var(--surface-2);color:var(--muted)">추천 시간대 '+esc(sp.when)+'</span></div>';
+  h+='<h3>'+esc(sp.name)+'</h3><p class="jp">'+esc(sp.jp)+'</p>';
+  h+='<p class="oneline" style="border-left-color:var(--sp)">'+esc(sp.one)+'</p>';
+  if(CFG.STREET_VIEW)h+='<div id="svWrap"><h4>거리에서 본 모습</h4><div id="svPano"></div></div>';
+  if(CFG.PLACE_PHOTOS)h+='<div id="photoSlot"></div>';
+  h+='<div class="links"><a class="lk" href="'+gmap(sp.q)+'" target="_blank" rel="noopener">사진 · 리뷰 ↗</a>'+
+     '<a class="lk" href="'+gdir(sp.lat,sp.lng)+'" target="_blank" rel="noopener">길찾기 ↗</a>'+
+     (sp.url?'<a class="lk" href="'+sp.url+'" target="_blank" rel="noopener">공식 사이트 ↗</a>':'')+'</div>';
+  if(sp.facts){h+='<h4>기본 정보</h4><dl class="facts">';sp.facts.forEach(function(f){h+='<dt>'+esc(f[0])+'</dt><dd>'+f[1]+'</dd>';});h+='</dl>';}
+  h+='<h4>어떤 곳인가</h4><p class="desc">'+sp.desc+'</p>';
+  h+='<div class="spnote">프로그램 일정이 아니라 <b>빈 시간용 참고</b>입니다. 관찰 질문과 기록은 없습니다.</div>';
+  return h+'</div>';
+}
 function logPanel(){
   var done=answered(),pct=TOTALQ?Math.round(done/TOTALQ*100):0;
   var vis=P.filter(function(p){return (notes[nkey(p)]||{}).v;}).length;
@@ -664,8 +734,14 @@ function wire(){
       var p=P[selected];focusOn(p.lat,p.lng,16);
     });
   });
+  Array.prototype.forEach.call(panel.querySelectorAll(".row[data-s]"),function(b){
+    b.addEventListener("click",function(){
+      selSpot=+b.getAttribute("data-s");render();
+      var sp=S[selSpot];focusOn(sp.lat,sp.lng,15);
+    });
+  });
   var bk=panel.querySelector("#backBtn");
-  if(bk)bk.addEventListener("click",function(){selected=null;render();applyDay();});
+  if(bk)bk.addEventListener("click",function(){selected=null;selSpot=null;render();applyDay();});
   Array.prototype.forEach.call(panel.querySelectorAll(".ansbox"),function(t){
     var k=t.getAttribute("data-k"),q=t.getAttribute("data-q"),n=nget(k);
     t.value=(q==="memo")?(n.memo||""):((n.a&&n.a[q])||"");grow(t);
@@ -706,8 +782,9 @@ function showPlain(t){
 var wasNoMap=false;
 function render(){
   panel.innerHTML = (current==="log") ? logPanel()
+    : (current==="spot") ? (selSpot==null ? spotList() : spotDetail(selSpot))
     : (selected==null ? overview(current) : detail(selected));
-  var noMap = (current==="log") || (selected!=null);
+  var noMap = (current==="log") || (selected!=null) || (current==="spot"&&selSpot!=null);
   document.body.classList.toggle("nomap", noMap);
   if(wasNoMap && !noMap && gmReady && window.google){
     /* 숨겼다가 다시 보일 때는 지도에 크기가 바뀌었음을 알려야 회색으로 남지 않습니다 */
@@ -718,12 +795,13 @@ function render(){
   setSave(saveState,saveMsg);
   wire();
   panel.scrollTop=0;
-  if(selected!=null&&current!=="log"){ mountStreetView(P[selected]); mountPhotos(P[selected]); }
+  if(current==="spot"){ if(selSpot!=null){ mountStreetView(S[selSpot]); mountPhotos(S[selSpot]); } }
+  else if(selected!=null&&current!=="log"){ mountStreetView(P[selected]); mountPhotos(P[selected]); }
 }
 
 /* ================= 탭 ================= */
 function setTab(d){
-  current=d;
+  current=d; if(d!=="spot")selSpot=null;
   Array.prototype.forEach.call(document.querySelectorAll(".tab"),function(t){
     var on=t.getAttribute("data-day")===d;
     t.setAttribute("aria-selected", on ? "true":"false");
@@ -731,7 +809,8 @@ function setTab(d){
   });
   tabFade();
   render(); applyDay();
-  if(selected!=null&&gmReady&&d!=="log"){var p=P[selected];focusOn(p.lat,p.lng,16);}
+  if(d==="spot"){ if(selSpot!=null&&gmReady){var sp=S[selSpot];focusOn(sp.lat,sp.lng,15);} }
+  else if(selected!=null&&gmReady&&d!=="log"){var p=P[selected];focusOn(p.lat,p.lng,16);}
 }
 /* 탭 줄이 옆으로 넘칠 때만 오른쪽 끝에 그림자를 띄웁니다 */
 function tabFade(){
@@ -749,7 +828,7 @@ function tabFade(){
     b.title=TABLABEL[d]+(TABSUB[d]?" · "+TABSUB[d]:"");
     var lb='<span class="lb"><b>'+TABLABEL[d]+'</b>'+(TABSUB[d]?'<i>'+TABSUB[d]+'</i>':'')+'</span>';
     b.innerHTML=(DAYS[d]?'<span class="dot" style="background:'+CSSCOL[d]+'"></span>':'')+lb;
-    b.addEventListener("click",function(){selected=null;setTab(d);});
+    b.addEventListener("click",function(){selected=null;selSpot=null;setTab(d);});
     w.appendChild(b);
   });
   w.addEventListener("scroll",tabFade,{passive:true});
