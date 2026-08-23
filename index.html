@@ -211,6 +211,23 @@ ol.qs li{counter-increment:q;position:relative;padding:13px 15px 13px 44px;borde
 ol.qs li::before{content:"Q" counter(q);position:absolute;left:14px;top:13px;
   font-size:12px;font-weight:600;color:var(--brand)}
 ol.qs li.answered{box-shadow:inset 3px 0 0 var(--ok)}
+/* 인터뷰 질문 영어 번역 */
+.qtx{display:inline}
+.enbtn{appearance:none;font-family:inherit;font-size:11px;font-weight:700;letter-spacing:.06em;
+  color:var(--brand);background:var(--surface);border:1px solid var(--brand);border-radius:2px;
+  padding:2px 7px;margin-left:7px;cursor:pointer;vertical-align:2px;line-height:1.5}
+.enbtn:hover{background:var(--brand);color:var(--surface)}
+.enbtn[aria-expanded=true]{background:var(--brand);color:var(--surface)}
+.entext{margin:10px 0 0;padding:10px 13px;background:var(--surface);border:1px solid var(--line-soft);
+  border-left:3px solid var(--brand);border-radius:2px;
+  font-size:14px;line-height:1.62;color:var(--ink-2);
+  font-family:"IBM Plex Sans KR",system-ui,sans-serif}
+.entext[hidden]{display:none}
+h4 .enall{appearance:none;float:right;font-family:inherit;font-size:11px;font-weight:700;letter-spacing:.04em;
+  color:var(--ink);background:var(--surface);border:1px solid var(--ink-2);border-radius:2px;
+  padding:3px 9px;cursor:pointer;margin-top:-2px}
+h4 .enall:hover{background:var(--ink);color:var(--surface)}
+h4 .enall.on{background:var(--ink);color:var(--surface)}
 .ansbox{display:block;width:100%;margin-top:10px;box-sizing:border-box;font-family:inherit;font-size:16px;
   line-height:1.7;color:var(--ink);background:var(--surface);border:1px solid var(--line);border-radius:2px;
   padding:11px 13px;resize:none;overflow:hidden;min-height:44px;transition:border-color .15s,background .15s,box-shadow .15s}
@@ -571,10 +588,15 @@ function detail(i){
   if(p.facts){h+='<h4>기본 정보</h4><dl class="facts">';p.facts.forEach(function(f){h+='<dt>'+esc(f[0])+'</dt><dd>'+f[1]+'</dd>';});h+='</dl>';}
   h+='<h4>어떤 곳인가</h4><p class="desc">'+esc(p.desc)+'</p>';
   if(p.subs){h+='<h4>안에서 볼 것</h4><ul class="subs">';p.subs.forEach(function(s){h+='<li><b>'+esc(s[0])+'</b> — '+esc(s[1])+'</li>';});h+='</ul>';}
-  h+='<h4>관찰 질문 — 다녀와서 답을 적어두십시오</h4><ol class="qs">';
+  /* 인터뷰 일정에는 영어 번역이 붙어 있습니다(p.qsEn). 질문 옆 EN 버튼으로 펼칩니다. */
+  var hasEn=!!(p.qsEn&&p.qsEn.length);
+  h+='<h4>관찰 질문 — 다녀와서 답을 적어두십시오'+
+     (hasEn?'<button type="button" class="enall" id="enAll">EN 전체 보기</button>':'')+'</h4><ol class="qs">';
   p.qs.forEach(function(q,qi){
-    var a=(n.a&&n.a[qi])||"";
-    h+='<li'+(a.trim()?' class="answered"':'')+'>'+esc(q)+
+    var a=(n.a&&n.a[qi])||"", en=hasEn?(p.qsEn[qi]||""):"";
+    h+='<li'+(a.trim()?' class="answered"':'')+'><span class="qtx">'+esc(q)+'</span>'+
+       (en?'<button type="button" class="enbtn" data-en="'+qi+'" aria-expanded="false">EN</button>'+
+           '<p class="entext" data-enq="'+qi+'" hidden lang="en">'+esc(en)+'</p>':'')+
        '<textarea class="ansbox'+(a.trim()?" filled":"")+'" data-k="'+k+'" data-q="'+qi+'" rows="1" placeholder="여기에 적으면 기록으로 남습니다"></textarea></li>';
   });
   h+='</ol><h4>그 밖에 본 것</h4><textarea class="ansbox'+((n.memo||"").trim()?" filled":"")+'" data-k="'+k+'" data-q="memo" rows="1" placeholder="사진으로 남긴 것, 인상 깊었던 디테일, 떠오른 아이디어"></textarea>';
@@ -607,7 +629,35 @@ function logPanel(){
     :'<p class="logempty">아직 기록이 없습니다. 위 탭에서 장소를 고르고, 관찰 질문 아래 칸에 답을 적어 보십시오. 적는 즉시 저장됩니다.</p>');
 }
 function grow(t){t.style.height="auto";t.style.height=Math.max(38,t.scrollHeight+2)+"px";}
+function wireEn(){
+  var btns=panel.querySelectorAll(".enbtn"); if(!btns.length)return;
+  function toggle(qi,open){
+    var b=panel.querySelector('.enbtn[data-en="'+qi+'"]'),
+        t=panel.querySelector('.entext[data-enq="'+qi+'"]');
+    if(!b||!t)return;
+    if(open==null)open=t.hasAttribute("hidden");
+    if(open)t.removeAttribute("hidden"); else t.setAttribute("hidden","");
+    b.setAttribute("aria-expanded",open?"true":"false");
+  }
+  Array.prototype.forEach.call(btns,function(b){
+    b.addEventListener("click",function(){toggle(b.getAttribute("data-en"),null);syncAll();});
+  });
+  var all=panel.querySelector("#enAll");
+  function syncAll(){
+    if(!all)return;
+    var open=!panel.querySelector(".entext[hidden]");
+    all.classList.toggle("on",open);
+    all.textContent=open?"EN 접기":"EN 전체 보기";
+  }
+  if(all)all.addEventListener("click",function(){
+    var open=!!panel.querySelector(".entext[hidden]");
+    Array.prototype.forEach.call(btns,function(b){toggle(b.getAttribute("data-en"),open);});
+    syncAll();
+  });
+  syncAll();
+}
 function wire(){
+  wireEn();
   Array.prototype.forEach.call(panel.querySelectorAll(".row[data-i]"),function(b){
     b.addEventListener("click",function(){
       selected=+b.getAttribute("data-i");render();
