@@ -27,7 +27,7 @@
   --brand:#C22E14;
   --d1:#C22E14; --d2:#1D5A96; --d3:#855505; --d4:#0D6B4E; --d5:#63409B;
   --d1-soft:#F7E4DE; --d2-soft:#E2EAF3; --d3-soft:#F4EAD7; --d4-soft:#DCEBE3; --d5-soft:#E9E2F3;
-  --sp:#0F7382; --sp-soft:#DCEDEF;
+  --sp:#FF9500; --sp-ink:#9A4E00; --sp-soft:#FFEEDA;
   --ok:#0D6B4E; --warn:#855505; --bad:#C22E14;
   --radius:2px;
   --shadow:0 1px 0 rgba(20,18,15,.05);
@@ -41,7 +41,7 @@
     --brand:#FF6A4A;
     --d1:#DE4526; --d2:#2E7BD4; --d3:#A87513; --d4:#12876A; --d5:#7A50C6;
     --d1-soft:#2E1710; --d2-soft:#10233A; --d3-soft:#2C2008; --d4-soft:#0C2A22; --d5-soft:#1F1638;
-    --sp:#2FA8B8; --sp-soft:#0B2B30;
+    --sp:#FFA733; --sp-ink:#FFB865; --sp-soft:#33210B;
     --ok:#12876A; --warn:#A87513; --bad:#DE4526;
     --radius:2px;
     --shadow:0 1px 0 rgba(0,0,0,.5);
@@ -96,7 +96,8 @@ svg text{font-family:"IBM Plex Sans KR","Apple SD Gothic Neo",system-ui,sans-ser
 .tab[data-day="3"][aria-selected=true]{background:var(--d3)}
 .tab[data-day="4"][aria-selected=true]{background:var(--d4)}
 .tab[data-day="5"][aria-selected=true]{background:var(--d5)}
-.tab[data-day=spot][aria-selected=true]{background:var(--sp)}
+.tab[data-day=spot][aria-selected=true]{background:var(--sp);color:#3A1E00}
+.tab[data-day=spot][aria-selected=true] .lb i{opacity:.75}
 .tab[data-day=log]{border-color:var(--ink-2);background:var(--surface-2);color:var(--ink)}
 .tab[data-day=log][aria-selected=true]{background:var(--ink);color:var(--surface);border-style:solid}
 
@@ -169,10 +170,10 @@ ol.tl li:last-child{border-bottom:none}
 .row.head .n{background:none;border:1px dashed var(--line)}
 .hasnote{width:7px;height:7px;border-radius:50%;background:var(--ok);display:inline-block;margin-left:6px}
 /* 여행 명소 — 프로그램 일정과 구분되는 표시 */
-.row .n.sp{border-radius:2px;transform:rotate(45deg)}
+.row .n.sp{border-radius:2px;transform:rotate(45deg);color:#3A1E00;box-shadow:0 0 0 1px rgba(107,51,0,.45)}
 .row .n.sp span{display:block;transform:rotate(-45deg)}
 .whenchip{display:inline-block;font-size:11px;font-weight:600;letter-spacing:.04em;
-  padding:2px 7px;border-radius:2px;background:var(--sp-soft);color:var(--sp);margin-left:7px;vertical-align:1px}
+  padding:2px 7px;border-radius:2px;background:var(--sp-soft);color:var(--sp-ink);margin-left:7px;vertical-align:1px}
 .spnote{margin:16px 0 0;padding:12px 14px;border-radius:2px;background:var(--sp-soft);
   border-left:3px solid var(--sp);font-size:13.5px;line-height:1.7;color:var(--ink-2)}
 .spnote b{color:var(--ink);font-weight:600}
@@ -294,10 +295,10 @@ a{color:var(--brand)}a:hover{color:var(--ink)}
 "use strict";
 var CFG=window.OUTSIGHT_CONFIG||{}, D=window.OUTSIGHT_DATA||{};
 var P=D.P||[], S=D.S||[], DAYS=D.DAYS||{};   /* D.L(도쿄 주요 명소)는 더 이상 쓰지 않습니다 */
-var COL={1:"#C22E14",2:"#1D5A96",3:"#855505",4:"#0D6B4E",5:"#63409B",spot:"#0F7382"};
-var COL_DARK={1:"#DE4526",2:"#2E7BD4",3:"#A87513",4:"#12876A",5:"#7A50C6",spot:"#2FA8B8"};
+var COL={1:"#C22E14",2:"#1D5A96",3:"#855505",4:"#0D6B4E",5:"#63409B",spot:"#FF9500"};
+var COL_DARK={1:"#DE4526",2:"#2E7BD4",3:"#A87513",4:"#12876A",5:"#7A50C6",spot:"#FFA733"};
 if(window.matchMedia&&window.matchMedia("(prefers-color-scheme: dark)").matches)COL=COL_DARK;
-var CSSCOL={1:"var(--d1)",2:"var(--d2)",3:"var(--d3)",4:"var(--d4)",5:"var(--d5)",spot:"var(--sp)"};
+var CSSCOL={1:"var(--d1)",2:"var(--d2)",3:"var(--d3)",4:"var(--d4)",5:"var(--d5)",spot:"var(--sp-ink)"};
 var ORDER=["all","1","2","3","5","4","spot","log"];
 var TABLABEL={all:"전체","1":"1일차","2":"2일차","3":"3일차","5":"4일차 A","4":"4일차 B",spot:"여행 명소",log:"답사 기록"};
 var TABSUB  ={"1":"9.8","2":"9.9","3":"9.10","5":"구라마에","4":"하라주쿠",spot:"프로그램 외"};
@@ -456,7 +457,7 @@ function spin(dim){
   return {
     path:"M 0,-13 13,0 0,13 -13,0 z", scale:dim?.62:1,
     fillColor:COL.spot, fillOpacity:dim?.3:1,
-    strokeColor:"#FCFBF8", strokeWeight:2, strokeOpacity:dim?.35:1,
+    strokeColor:"#6B3300", strokeWeight:2.2, strokeOpacity:dim?.3:1,
     labelOrigin:new google.maps.Point(0,0)
   };
 }
@@ -488,7 +489,7 @@ function initMap(){
   S.forEach(function(sp,i){
     var m=new google.maps.Marker({
       position:{lat:sp.lat,lng:sp.lng}, map:map, title:"여행 명소 · "+sp.name,
-      icon:spin(false), label:{text:String(sp.n),color:"#fff",fontSize:"11px",fontWeight:"700",
+      icon:spin(false), label:{text:String(sp.n),color:"#3A1E00",fontSize:"11px",fontWeight:"700",
         fontFamily:"IBM Plex Sans KR,system-ui,sans-serif"},
       zIndex:60+i
     });
@@ -640,7 +641,7 @@ function detail(i){
 }
 function spotList(){
   var h='<div class="savechip" id="saveChip"></div>';
-  h+='<div class="phead"><span class="datechip" style="border-color:var(--sp);color:var(--sp)">프로그램 외 · 참고</span>'+
+  h+='<div class="phead"><span class="datechip" style="border-color:var(--sp-ink);color:var(--sp-ink)">프로그램 외 · 참고</span>'+
      '<h2>도쿄 여행 명소 '+S.length+'곳</h2>'+
      '<p>프로그램 취지와 무관하게, 일반 도쿄 여행 기준으로 고른 곳입니다. 위에서부터 우선순위입니다.</p></div>';
   var rows="";
@@ -659,7 +660,7 @@ function spotDetail(i){
   var h='<div class="savechip" id="saveChip"></div>';
   h+='<button class="back" id="backBtn">← 여행 명소 목록으로</button><div class="dt">';
   h+='<div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">'+
-     '<span class="dchip" style="background:var(--sp-soft);color:var(--sp)">우선순위 '+sp.n+' · '+esc(sp.area)+'</span>'+
+     '<span class="dchip" style="background:var(--sp-soft);color:var(--sp-ink)">우선순위 '+sp.n+' · '+esc(sp.area)+'</span>'+
      '<span class="dchip" style="background:var(--surface-2);color:var(--muted)">추천 시간대 '+esc(sp.when)+'</span></div>';
   h+='<h3>'+esc(sp.name)+'</h3><p class="jp">'+esc(sp.jp)+'</p>';
   h+='<p class="oneline" style="border-left-color:var(--sp)">'+esc(sp.one)+'</p>';
