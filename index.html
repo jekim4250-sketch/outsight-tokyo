@@ -52,24 +52,51 @@ svg text{font-family:"IBM Plex Sans KR","Apple SD Gothic Neo",system-ui,sans-ser
 }
 .title{font-family:"Hahmlet","Apple SD Gothic Neo",serif;font-weight:700;font-size:17px;letter-spacing:-.015em;white-space:nowrap}
 .title span{display:block;font-size:11px;letter-spacing:.18em;color:var(--brand);font-weight:500;text-transform:uppercase}
-.tabs{display:flex;gap:6px;overflow-x:auto;flex:1;scrollbar-width:none;padding:2px 0}
+
+/* 탭 줄 — 넘칠 때 옆으로 밀어 보며, 오른쪽 끝에 「더 있음」 그림자를 띄웁니다 */
+.tabwrap{position:relative;flex:1;min-width:0;display:flex}
+.tabwrap::after{
+  content:"";position:absolute;right:0;top:0;bottom:0;width:34px;pointer-events:none;
+  background:linear-gradient(to right,rgba(0,0,0,0),var(--surface));
+  opacity:0;transition:opacity .15s;
+}
+.tabwrap.more::after{opacity:1}
+.tabs{display:flex;gap:6px;overflow-x:auto;flex:1;scrollbar-width:none;padding:2px 0;
+  scroll-snap-type:x proximity;overscroll-behavior-x:contain}
 .tabs::-webkit-scrollbar{display:none}
 .tab{
   appearance:none;border:1px solid var(--line);background:var(--surface);color:var(--ink-2);
-  font-family:inherit;font-size:14px;font-weight:500;min-height:44px;padding:0 15px;border-radius:2px;
-  cursor:pointer;white-space:nowrap;display:inline-flex;align-items:center;gap:8px;flex:none;
+  font-family:inherit;font-weight:500;min-height:46px;padding:0 13px;border-radius:2px;
+  cursor:pointer;white-space:nowrap;display:inline-flex;align-items:center;gap:7px;flex:none;
+  scroll-snap-align:start;
 }
 .tab:hover{border-color:var(--ink-2);color:var(--ink)}
-.tab .dot{width:9px;height:9px;border-radius:50%;background:currentColor}
-.tab[aria-selected=true]{color:#fff;border-color:transparent;font-weight:600}
+.tab .dot{width:9px;height:9px;border-radius:50%;background:currentColor;flex:none}
+.tab .lb{display:flex;flex-direction:column;align-items:flex-start;line-height:1.22}
+.tab .lb b{font-size:14px;font-weight:600;letter-spacing:-.01em}
+.tab .lb i{font-style:normal;font-size:11px;opacity:.7;letter-spacing:.02em;font-variant-numeric:tabular-nums}
+.tab[aria-selected=true]{color:#fff;border-color:transparent}
+.tab[aria-selected=true] .lb i{opacity:.85}
 .tab[data-day=all][aria-selected=true]{background:var(--ink);color:var(--surface)}
 .tab[data-day="1"][aria-selected=true]{background:var(--d1)}
 .tab[data-day="2"][aria-selected=true]{background:var(--d2)}
 .tab[data-day="3"][aria-selected=true]{background:var(--d3)}
 .tab[data-day="4"][aria-selected=true]{background:var(--d4)}
 .tab[data-day="5"][aria-selected=true]{background:var(--d5)}
-.tab[data-day=log]{border-color:var(--ink-2);background:var(--surface-2);color:var(--ink);font-weight:600}
+.tab[data-day=log]{border-color:var(--ink-2);background:var(--surface-2);color:var(--ink)}
 .tab[data-day=log][aria-selected=true]{background:var(--ink);color:var(--surface);border-style:solid}
+
+/* 모바일 — 제목 줄과 탭 줄을 위아래로 나눕니다 */
+@media (max-width:860px){
+  .top{flex-wrap:wrap;row-gap:8px;column-gap:10px;padding:8px 12px;
+       padding-top:calc(8px + env(safe-area-inset-top))}
+  .title{order:1;flex:1;min-width:0;font-size:16px}
+  .top .iconbtn{order:2}
+  .tabwrap{order:3;flex:0 0 100%;width:100%}
+  .tabwrap::after{width:30px}
+  .tabs{padding:0}
+  .tab{min-height:48px;padding:0 12px}
+}
 
 .tab:focus-visible{outline:2px solid var(--brand);outline-offset:2px}
 .iconbtn{
@@ -206,8 +233,7 @@ a{color:var(--brand)}a:hover{color:var(--ink)}
 <div id="app">
   <div class="top">
     <div class="title"><span>Outsight Tokyo</span>9.8 – 9.11</div>
-    <div class="tabs" id="tabs" role="tablist"></div>
-    <button class="iconbtn on" id="spotBtn" title="도쿄 주요 명소 표시">◇</button>
+    <div class="tabwrap" id="tabWrap"><div class="tabs" id="tabs" role="tablist"></div></div>
     <button class="iconbtn" id="locBtn" title="내 위치">◎</button>
   </div>
   <div class="main">
@@ -222,18 +248,19 @@ a{color:var(--brand)}a:hover{color:var(--ink)}
 (function(){
 "use strict";
 var CFG=window.OUTSIGHT_CONFIG||{}, D=window.OUTSIGHT_DATA||{};
-var P=D.P||[], L=D.L||[], DAYS=D.DAYS||{};
+var P=D.P||[], DAYS=D.DAYS||{};   /* D.L(도쿄 주요 명소)는 더 이상 쓰지 않습니다 */
 var COL={1:"#C22E14",2:"#1D5A96",3:"#855505",4:"#0D6B4E",5:"#63409B"};
 var COL_DARK={1:"#DE4526",2:"#2E7BD4",3:"#A87513",4:"#12876A",5:"#7A50C6"};
 if(window.matchMedia&&window.matchMedia("(prefers-color-scheme: dark)").matches)COL=COL_DARK;
 var CSSCOL={1:"var(--d1)",2:"var(--d2)",3:"var(--d3)",4:"var(--d4)",5:"var(--d5)"};
 var ORDER=["all","1","2","3","5","4","log"];
-var TABLABEL={all:"전체","1":"1일차 9.8","2":"2일차 9.9","3":"3일차 9.10","5":"4일차 A 구라마에","4":"4일차 B 하라주쿠",log:"답사 기록"};
+var TABLABEL={all:"전체","1":"1일차","2":"2일차","3":"3일차","5":"4일차 A","4":"4일차 B",log:"답사 기록"};
+var TABSUB  ={"1":"9.8","2":"9.9","3":"9.10","5":"구라마에","4":"하라주쿠"};
 var DORD={1:1,2:2,3:3,5:4,4:5};
 P.sort(function(a,b){return (DORD[a.d]-DORD[b.d])||(a.n-b.n);});
 
 var panel=document.getElementById("panelBody");
-var current="all", selected=null, selSpot=null, spotsOn=true;
+var current="all", selected=null;
 function esc(s){return String(s).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;");}
 function gmap(q){return "https://www.google.com/maps/search/?api=1&query="+encodeURIComponent(q);}
 function gdir(la,ln){return "https://www.google.com/maps/dir/?api=1&destination="+la+"%2C"+ln+"&travelmode=transit";}
@@ -341,15 +368,12 @@ function buildKML(){
       ln.map(function(p){return p.lng+","+p.lat+",0";}).join(" ")+"</coordinates></LineString></Placemark>");
     o.push("</Folder>");
   });
-  o.push("<Folder><name>도쿄 주요 명소</name>");
-  L.forEach(function(s){o.push("<Placemark><name>"+x(s[0])+"</name><description>"+x(s[3]+"\n"+s[4])+
-    "</description><Point><coordinates>"+s[2]+","+s[1]+",0</coordinates></Point></Placemark>");});
-  o.push("</Folder></Document></kml>");
+  o.push("</Document></kml>");
   return o.join("\n");
 }
 
 /* ================= 구글 지도 ================= */
-var map=null, markers=[], spotMarkers=[], lines={}, meMarker=null, gmReady=false, placesLib=null, svService=null;
+var map=null, markers=[], lines={}, meMarker=null, gmReady=false, placesLib=null, svService=null;
 function loadMaps(){
   if(!CFG.GOOGLE_MAPS_KEY){
     document.getElementById("map").innerHTML='<div class="mapmsg"><div><b>구글 지도 키가 아직 없습니다.</b><br><br>'+
@@ -391,17 +415,8 @@ function initMap(){
       label:{text:String(p.n),color:"#fff",fontSize:"12px",fontWeight:"600",fontFamily:"IBM Plex Sans KR,system-ui,sans-serif"},
       zIndex:100+i
     });
-    m.addListener("click",function(){ selected=i; selSpot=null; setTab(String(p.d)); });
+    m.addListener("click",function(){ selected=i; setTab(String(p.d)); });
     markers.push(m);
-  });
-  L.forEach(function(s,i){
-    var m=new google.maps.Marker({
-      position:{lat:s[1],lng:s[2]}, map:map, title:s[0],
-      icon:{path:"M 0,-7 7,0 0,7 -7,0 z",fillColor:"#8C8375",fillOpacity:.85,strokeColor:"#FCFBF8",strokeWeight:1.4,scale:1},
-      zIndex:10
-    });
-    m.addListener("click",function(){ selSpot=i; selected=null; render(); focusOn(s[1],s[2],15); });
-    spotMarkers.push(m);
   });
   [1,2,3,4,5].forEach(function(d){
     var pts=P.filter(function(p){return p.d===d&&!p.opt;}).map(function(p){return {lat:p.lat,lng:p.lng};});
@@ -418,7 +433,6 @@ function fitDay(d){
   if(!pts.length)return;
   var b=new google.maps.LatLngBounds();
   pts.forEach(function(p){b.extend({lat:p.lat,lng:p.lng});});
-  if(d==="all")L.forEach(function(s){b.extend({lat:s[1],lng:s[2]});});
   map.fitBounds(b,{top:60,bottom:60,left:60,right:60});
 }
 function applyDay(){
@@ -430,7 +444,6 @@ function applyDay(){
     markers[i].setOpacity(on?1:.45);
     markers[i].setZIndex(on?(100+i):5);
   });
-  spotMarkers.forEach(function(m){m.setMap(spotsOn?map:null);});
   [1,2,3,4,5].forEach(function(d){
     if(!lines[d])return;
     lines[d].setOptions({icons:[{icon:{path:"M 0,-1 0,1",
@@ -490,7 +503,7 @@ function overview(day){
   var h='<div class="savechip" id="saveChip"></div>';
   if(day==="all"){
     h+='<div class="phead"><span class="datechip">2026.9.8(화) – 9.11(금)</span><h2>전체 일정 '+P.length+'곳</h2>'+
-       '<p>지도의 번호를 누르거나 아래 목록에서 고르십시오. 마름모는 도쿄 주요 명소입니다.</p></div>';
+       '<p>지도의 번호를 누르거나 아래 목록에서 고르십시오.</p></div>';
   }else{
     var Y=DAYS[day];
     h+='<div class="phead"><span class="datechip">'+Y.date+'</span><h2>'+Y.label+' · '+esc(Y.area)+'</h2>'+
@@ -538,16 +551,6 @@ function detail(i){
   if(p.opt)h+='<div class="warn">확정 일정이 아니라 선택 방문지입니다.</div>';
   return h+'</div>';
 }
-function spotDetail(i){
-  var s=L[i];
-  return '<div class="savechip" id="saveChip"></div><button class="back" id="backBtn">← 목록으로</button><div class="dt">'+
-    '<span class="dchip" style="background:var(--surface-2);color:var(--muted)">도쿄 주요 명소</span>'+
-    '<h3>'+esc(s[0])+'</h3><p class="oneline">'+esc(s[3])+'</p>'+
-    '<div class="links"><a class="lk" href="'+gmap(s[0])+'" target="_blank" rel="noopener">사진 · 리뷰 ↗</a>'+
-    '<a class="lk" href="'+gdir(s[1],s[2])+'" target="_blank" rel="noopener">길찾기 ↗</a></div>'+
-    '<h4>가는 법</h4><p class="desc">'+esc(s[4])+'</p>'+
-    '<div class="warn">프로그램 일정에 포함된 곳이 아니라 위치 감각을 위한 참조입니다.</div></div>';
-}
 function logPanel(){
   var done=answered(),pct=TOTALQ?Math.round(done/TOTALQ*100):0;
   var vis=P.filter(function(p){return (notes[nkey(p)]||{}).v;}).length;
@@ -577,12 +580,12 @@ function grow(t){t.style.height="auto";t.style.height=Math.max(38,t.scrollHeight
 function wire(){
   Array.prototype.forEach.call(panel.querySelectorAll(".row[data-i]"),function(b){
     b.addEventListener("click",function(){
-      selected=+b.getAttribute("data-i");selSpot=null;render();
+      selected=+b.getAttribute("data-i");render();
       var p=P[selected];focusOn(p.lat,p.lng,16);
     });
   });
   var bk=panel.querySelector("#backBtn");
-  if(bk)bk.addEventListener("click",function(){selected=null;selSpot=null;render();applyDay();});
+  if(bk)bk.addEventListener("click",function(){selected=null;render();applyDay();});
   Array.prototype.forEach.call(panel.querySelectorAll(".ansbox"),function(t){
     var k=t.getAttribute("data-k"),q=t.getAttribute("data-q"),n=nget(k);
     t.value=(q==="memo")?(n.memo||""):((n.a&&n.a[q])||"");grow(t);
@@ -620,21 +623,31 @@ function showPlain(t){
 }
 function render(){
   panel.innerHTML = (current==="log") ? logPanel()
-    : (selSpot!=null ? spotDetail(selSpot) : (selected==null ? overview(current) : detail(selected)));
+    : (selected==null ? overview(current) : detail(selected));
   setSave(saveState,saveMsg);
   wire();
   panel.scrollTop=0;
-  if(selected!=null&&selSpot==null&&current!=="log"){ mountStreetView(P[selected]); mountPhotos(P[selected]); }
+  if(selected!=null&&current!=="log"){ mountStreetView(P[selected]); mountPhotos(P[selected]); }
 }
 
 /* ================= 탭 ================= */
 function setTab(d){
-  current=d; if(d!=="log")selSpot=null;
+  current=d;
   Array.prototype.forEach.call(document.querySelectorAll(".tab"),function(t){
-    t.setAttribute("aria-selected", t.getAttribute("data-day")===d ? "true":"false");
+    var on=t.getAttribute("data-day")===d;
+    t.setAttribute("aria-selected", on ? "true":"false");
+    if(on&&t.scrollIntoView)try{t.scrollIntoView({block:"nearest",inline:"nearest",behavior:"smooth"});}catch(e){}
   });
+  tabFade();
   render(); applyDay();
   if(selected!=null&&gmReady&&d!=="log"){var p=P[selected];focusOn(p.lat,p.lng,16);}
+}
+/* 탭 줄이 옆으로 넘칠 때만 오른쪽 끝에 그림자를 띄웁니다 */
+function tabFade(){
+  var w=document.getElementById("tabWrap"), s=document.getElementById("tabs");
+  if(!w||!s)return;
+  var more = s.scrollWidth - s.clientWidth - s.scrollLeft > 8;
+  w.classList.toggle("more", more);
 }
 (function buildTabs(){
   var w=document.getElementById("tabs");
@@ -642,15 +655,16 @@ function setTab(d){
     var b=document.createElement("button");
     b.className="tab";b.setAttribute("role","tab");b.setAttribute("data-day",d);
     b.setAttribute("aria-selected",d==="all"?"true":"false");
-    if(DAYS[d])b.innerHTML='<span class="dot" style="background:'+CSSCOL[d]+'"></span>'+TABLABEL[d];
-    else b.textContent=TABLABEL[d];
+    b.title=TABLABEL[d]+(TABSUB[d]?" · "+TABSUB[d]:"");
+    var lb='<span class="lb"><b>'+TABLABEL[d]+'</b>'+(TABSUB[d]?'<i>'+TABSUB[d]+'</i>':'')+'</span>';
+    b.innerHTML=(DAYS[d]?'<span class="dot" style="background:'+CSSCOL[d]+'"></span>':'')+lb;
     b.addEventListener("click",function(){selected=null;setTab(d);});
     w.appendChild(b);
   });
+  w.addEventListener("scroll",tabFade,{passive:true});
+  window.addEventListener("resize",tabFade);
+  tabFade();
 })();
-document.getElementById("spotBtn").addEventListener("click",function(){
-  spotsOn=!spotsOn;this.classList.toggle("on",spotsOn);applyDay();
-});
 document.getElementById("locBtn").addEventListener("click",function(){
   if(!navigator.geolocation||!gmReady)return;
   var b=this;b.textContent="…";
