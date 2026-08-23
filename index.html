@@ -518,11 +518,8 @@ function detail(i){
   h+='<p class="oneline" style="border-left-color:'+CSSCOL[p.d]+'">'+esc(p.one)+'</p>';
   if(CFG.STREET_VIEW)h+='<div id="svWrap"><h4>거리에서 본 모습</h4><div id="svPano"></div></div>';
   if(CFG.PLACE_PHOTOS)h+='<div id="photoSlot"></div>';
-  if(p.art){
-    h+='<h4>알아보기 위한 도식</h4><div class="art" style="color:'+CSSCOL[p.d]+'">';
-    p.art.forEach(function(a){h+='<figure class="tile"><svg viewBox="0 0 120 80">'+a[0]+'</svg><figcaption>'+a[1]+'</figcaption></figure>';});
-    h+='</div>';
-  }
+  /* 「알아보기 위한 도식」 제거 — 스트리트뷰·장소 사진이 그 역할을 대신합니다.
+     데이터(p.art)는 data.js에 그대로 두었으니 되살리려면 이 자리에 복원하면 됩니다. */
   h+='<div class="links">';
   if(p.q)h+='<a class="lk" href="'+gmap(p.q)+'" target="_blank" rel="noopener">사진 · 리뷰 ↗</a>';
   h+='<a class="lk" href="'+gdir(p.lat,p.lng)+'" target="_blank" rel="noopener">길찾기 ↗</a>';
