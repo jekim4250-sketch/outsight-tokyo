@@ -1,0 +1,679 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#EFEDE7">
+<title>Outsight Tokyo 답사 지도</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Hahmlet:wght@500;600;700&family=IBM+Plex+Sans+KR:wght@300;400;500;600;700&display=swap">
+<style>
+:root{
+  --bg:#EFEDE7; --surface:#FCFBF8; --surface-2:#F4F2EC;
+  --line:#CBC5B8; --line-soft:#E3DED3;
+  --ink:#14120F; --ink-2:#38342D; --muted:#67604F; --faint:#968E80;
+  --brand:#C22E14;
+  --d1:#C22E14; --d2:#1D5A96; --d3:#855505; --d4:#0D6B4E; --d5:#63409B;
+  --d1-soft:#F7E4DE; --d2-soft:#E2EAF3; --d3-soft:#F4EAD7; --d4-soft:#DCEBE3; --d5-soft:#E9E2F3;
+  --ok:#0D6B4E; --warn:#855505; --bad:#C22E14;
+  --radius:2px;
+  --shadow:0 1px 0 rgba(20,18,15,.05);
+  --panelw:430px;
+}
+@media (prefers-color-scheme:dark){
+  :root{
+    --bg:#131210; --surface:#1B1916; --surface-2:#221F1B;
+    --line:#3B372F; --line-soft:#2A2723;
+    --ink:#F3F0E9; --ink-2:#CFC9BC; --muted:#9C9385; --faint:#726B5F;
+    --brand:#FF6A4A;
+    --d1:#DE4526; --d2:#2E7BD4; --d3:#A87513; --d4:#12876A; --d5:#7A50C6;
+    --d1-soft:#2E1710; --d2-soft:#10233A; --d3-soft:#2C2008; --d4-soft:#0C2A22; --d5-soft:#1F1638;
+    --ok:#12876A; --warn:#A87513; --bad:#DE4526;
+    --radius:2px;
+    --shadow:0 1px 0 rgba(0,0,0,.5);
+  }
+}
+*{box-sizing:border-box}
+html,body{height:100%}
+body{
+  margin:0;background:var(--bg);color:var(--ink);
+  font-family:"IBM Plex Sans KR","Apple SD Gothic Neo","Malgun Gothic",system-ui,sans-serif;
+  font-size:15px;line-height:1.68;-webkit-font-smoothing:antialiased;overflow:hidden;text-wrap:pretty;
+}
+svg text{font-family:"IBM Plex Sans KR","Apple SD Gothic Neo",system-ui,sans-serif;}
+#app{display:flex;flex-direction:column;height:100dvh}
+
+/* ---------- top bar ---------- */
+.top{
+  display:flex;align-items:center;gap:12px;padding:10px 14px;
+  background:var(--surface);border-bottom:2px solid var(--line);flex:none;
+  padding-top:calc(10px + env(safe-area-inset-top));
+}
+.title{font-family:"Hahmlet","Apple SD Gothic Neo",serif;font-weight:700;font-size:17px;letter-spacing:-.015em;white-space:nowrap}
+.title span{display:block;font-size:11px;letter-spacing:.18em;color:var(--brand);font-weight:500;text-transform:uppercase}
+.tabs{display:flex;gap:6px;overflow-x:auto;flex:1;scrollbar-width:none;padding:2px 0}
+.tabs::-webkit-scrollbar{display:none}
+.tab{
+  appearance:none;border:1px solid var(--line);background:var(--surface);color:var(--ink-2);
+  font-family:inherit;font-size:14px;font-weight:500;min-height:44px;padding:0 15px;border-radius:2px;
+  cursor:pointer;white-space:nowrap;display:inline-flex;align-items:center;gap:8px;flex:none;
+}
+.tab:hover{border-color:var(--ink-2);color:var(--ink)}
+.tab .dot{width:9px;height:9px;border-radius:50%;background:currentColor}
+.tab[aria-selected=true]{color:#fff;border-color:transparent;font-weight:600}
+.tab[data-day=all][aria-selected=true]{background:var(--ink);color:var(--surface)}
+.tab[data-day="1"][aria-selected=true]{background:var(--d1)}
+.tab[data-day="2"][aria-selected=true]{background:var(--d2)}
+.tab[data-day="3"][aria-selected=true]{background:var(--d3)}
+.tab[data-day="4"][aria-selected=true]{background:var(--d4)}
+.tab[data-day="5"][aria-selected=true]{background:var(--d5)}
+.tab[data-day=log]{border-color:var(--ink-2);background:var(--surface-2);color:var(--ink);font-weight:600}
+.tab[data-day=log][aria-selected=true]{background:var(--ink);color:var(--surface);border-style:solid}
+
+.tab:focus-visible{outline:2px solid var(--brand);outline-offset:2px}
+.iconbtn{
+  appearance:none;border:1px solid var(--line);background:var(--surface);color:var(--ink-2);
+  width:44px;height:44px;border-radius:2px;cursor:pointer;flex:none;font-size:17px;
+  display:flex;align-items:center;justify-content:center;
+}
+.iconbtn:hover{border-color:var(--ink-2);color:var(--ink)}
+.iconbtn.on{background:var(--ink);color:var(--surface);border-color:transparent}
+
+/* ---------- layout ---------- */
+.main{flex:1;display:flex;min-height:0;position:relative}
+#map{flex:1;min-width:0;background:var(--surface-2);position:relative}
+.panel{
+  width:var(--panelw);flex:none;background:var(--surface);border-left:2px solid var(--line);
+  overflow-y:auto;-webkit-overflow-scrolling:touch;
+}
+@media (max-width:860px){
+  .main{flex-direction:column}
+  #map{height:46dvh;flex:none;position:relative}
+  .panel{width:100%;border-left:none;border-top:2px solid var(--line);flex:1;min-height:0}
+}
+
+/* ---------- panel content ---------- */
+.savechip{position:sticky;top:0;z-index:5;display:flex;align-items:center;gap:9px;
+  font-size:12.5px;font-weight:500;color:var(--muted);
+  background:var(--surface-2);border-bottom:2px solid var(--line);padding:10px 18px}
+.savedot{width:7px;height:7px;border-radius:50%;background:var(--faint);flex:none}
+.savedot.ok{background:var(--ok)}.savedot.busy{background:var(--warn)}.savedot.err{background:var(--bad)}
+.phead{padding:20px 18px 16px;border-bottom:2px solid var(--line);background:var(--surface-2)}
+.phead h2{font-family:"Hahmlet","Apple SD Gothic Neo",serif;font-weight:600;font-size:21px;margin:0;letter-spacing:-.015em;line-height:1.34}
+.phead p{margin:9px 0 0;font-size:14px;color:var(--muted)}
+.datechip{display:inline-block;font-size:12px;font-weight:600;letter-spacing:.08em;
+  padding:5px 10px;border-radius:2px;background:var(--surface);border:1px solid var(--line);color:var(--ink-2);margin-bottom:11px}
+.official{font-size:13px;line-height:1.7;color:var(--muted);margin:12px 0 0;padding:11px 13px;
+  border-radius:2px;background:var(--surface);border:1px solid var(--line-soft)}
+.official b{color:var(--ink);font-weight:600}
+ol.tl{list-style:none;margin:0;padding:4px 0}
+ol.tl li{border-bottom:1px solid var(--line-soft)}
+ol.tl li:last-child{border-bottom:none}
+.row{width:100%;display:grid;grid-template-columns:52px 30px 1fr;gap:12px;align-items:center;min-height:56px;
+  padding:13px 18px;background:none;border:none;text-align:left;cursor:pointer;font-family:inherit;color:inherit}
+.row:hover{background:var(--surface-2)}
+.row .t{font-size:12.5px;font-weight:500;color:var(--muted);font-variant-numeric:tabular-nums;letter-spacing:.02em}
+.row .n{width:28px;height:28px;border-radius:50%;display:inline-flex;align-items:center;justify-content:center;
+  font-size:13px;font-weight:600;color:#fff;align-self:center}
+.row .body strong{display:block;font-weight:600;font-size:15.5px;line-height:1.42;letter-spacing:-.01em}
+.row .body em{display:block;font-style:normal;font-size:13.5px;color:var(--muted);margin-top:3px;line-height:1.55}
+.row.head{cursor:default}.row.head:hover{background:none}
+.row.head .n{background:none;border:1px dashed var(--line)}
+.hasnote{width:7px;height:7px;border-radius:50%;background:var(--ok);display:inline-block;margin-left:6px}
+.back{display:inline-flex;align-items:center;gap:8px;background:none;border:none;cursor:pointer;
+  font-size:13px;font-weight:600;letter-spacing:.04em;color:var(--muted);min-height:44px;padding:10px 18px 4px;font-family:inherit}
+.back:hover{color:var(--ink)}
+.dt{padding:0 18px 24px}
+.dchip{display:inline-flex;align-items:center;font-size:12.5px;font-weight:600;letter-spacing:.04em;padding:6px 11px;border-radius:2px}
+.visited{display:inline-flex;align-items:center;gap:8px;font-size:13.5px;font-weight:500;color:var(--ink-2);cursor:pointer;margin-left:auto;min-height:44px}
+.visited input{accent-color:var(--ok);margin:0;width:20px;height:20px}
+.dt h3{font-family:"Hahmlet","Apple SD Gothic Neo",serif;font-size:24px;font-weight:700;margin:10px 0 5px;line-height:1.3;letter-spacing:-.02em}
+.dt .jp{font-size:13px;color:var(--muted);margin:0 0 16px}
+.oneline{font-size:15.5px;line-height:1.65;color:var(--ink);margin:0 0 18px;padding:14px 16px;border-radius:2px;
+  background:var(--surface-2);border-left:3px solid var(--line)}
+.dt h4{font-size:11.5px;letter-spacing:.16em;text-transform:uppercase;
+  color:var(--muted);margin:24px 0 10px;font-weight:600}
+.dt p.desc{margin:0;font-size:14.5px;line-height:1.78;color:var(--ink-2)}
+/* photos + street view */
+.shots{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.shot{position:relative;aspect-ratio:4/3;border-radius:2px;overflow:hidden;background:var(--surface-2);border:1px solid var(--line-soft)}
+.shot img{width:100%;height:100%;object-fit:cover;display:block}
+.shot .cap{position:absolute;left:0;bottom:0;right:0;font-size:11.5px;font-weight:500;padding:5px 8px;color:#fff;
+  background:linear-gradient(transparent,rgba(0,0,0,.62))}
+#svPano{width:100%;aspect-ratio:4/3;border-radius:2px;overflow:hidden;background:var(--surface-2);border:1px solid var(--line-soft)}
+.shotnote{font-size:12.5px;color:var(--muted);margin:10px 0 0;line-height:1.6}
+.art{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+figure.tile{margin:0;background:var(--surface-2);border:1px solid var(--line-soft);border-radius:2px;overflow:hidden}
+figure.tile svg{display:block;width:100%;height:auto}
+figure.tile figcaption{font-size:12px;line-height:1.5;color:var(--muted);padding:2px 10px 10px;text-align:center}
+.i1{fill:currentColor;opacity:.14}.i2{fill:currentColor;opacity:.28}.i3{fill:currentColor;opacity:.5}
+.i4{fill:currentColor;opacity:.85}.gr{fill:currentColor;opacity:.2}
+.ln{fill:none;stroke:currentColor;stroke-width:1.2;opacity:.4}
+.ln2{fill:none;stroke:currentColor;stroke-width:2.2;opacity:.75}
+.vd{fill:var(--surface-2)}
+.tn{fill:currentColor;font-family:"IBM Plex Sans KR",system-ui,sans-serif;font-size:13px;font-weight:600;opacity:.9}
+.links{display:flex;flex-wrap:wrap;gap:7px;margin-top:11px}
+.lk{display:inline-flex;align-items:center;gap:7px;font-size:13.5px;font-weight:500;text-decoration:none;color:var(--ink-2);
+  border:1px solid var(--line);background:var(--surface);min-height:44px;padding:0 15px;border-radius:2px;cursor:pointer;font-family:inherit}
+.lk:hover{border-color:var(--ink-2);color:var(--ink);background:var(--surface-2)}
+ul.subs{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:8px}
+ul.subs li{font-size:14.5px;line-height:1.68;color:var(--ink-2);padding-left:16px;position:relative}
+ul.subs li::before{content:"";position:absolute;left:0;top:10px;width:6px;height:6px;border-radius:50%;background:var(--brand)}
+ul.subs li b{font-weight:600;color:var(--ink)}
+ol.qs{margin:0;padding:0;list-style:none;counter-reset:q;display:flex;flex-direction:column;gap:10px}
+ol.qs li{counter-increment:q;position:relative;padding:13px 15px 13px 44px;border-radius:2px;
+  background:var(--surface-2);font-size:14.5px;line-height:1.68;color:var(--ink)}
+ol.qs li::before{content:"Q" counter(q);position:absolute;left:14px;top:13px;
+  font-size:12px;font-weight:600;color:var(--brand)}
+ol.qs li.answered{box-shadow:inset 3px 0 0 var(--ok)}
+.ansbox{display:block;width:100%;margin-top:10px;box-sizing:border-box;font-family:inherit;font-size:16px;
+  line-height:1.7;color:var(--ink);background:var(--surface);border:1px solid var(--line);border-radius:2px;
+  padding:11px 13px;resize:none;overflow:hidden;min-height:44px;transition:border-color .15s,background .15s,box-shadow .15s}
+.ansbox::placeholder{color:var(--faint)}
+.ansbox:focus{outline:none;border-color:var(--brand);box-shadow:0 0 0 3px color-mix(in oklab, var(--brand) 18%, transparent)}
+.ansbox.filled{background:var(--surface-2)}
+.facts{margin:0;display:grid;grid-template-columns:auto 1fr;gap:8px 16px;font-size:14px}
+.facts dt{font-size:12px;font-weight:600;letter-spacing:.04em;color:var(--muted);padding-top:3px}
+.facts dd{margin:0;color:var(--ink-2)}
+.warn{margin-top:16px;font-size:13.5px;line-height:1.68;padding:12px 15px;border-radius:2px;background:var(--d3-soft);color:var(--ink);border-left:3px solid var(--warn)}
+.prog{display:flex;align-items:center;gap:12px;margin:14px 0 0}
+.progbar{flex:1;height:8px;border-radius:2px;background:var(--line-soft);overflow:hidden}
+.progbar i{display:block;height:100%;background:var(--ok);border-radius:2px}
+.progn{font-size:12.5px;font-weight:500;color:var(--muted);white-space:nowrap;font-variant-numeric:tabular-nums}
+.logwrap{padding:4px 18px 24px}
+.logday{font-size:12px;font-weight:600;letter-spacing:.14em;text-transform:uppercase;color:var(--muted);margin:26px 0 10px}
+.logplace{border:1px solid var(--line-soft);border-radius:2px;padding:15px 16px;margin-bottom:10px;background:var(--surface-2)}
+.logplace h5{font-family:"Hahmlet","Apple SD Gothic Neo",serif;font-size:16.5px;font-weight:600;margin:0 0 2px;letter-spacing:-.01em}
+.logplace .lq{font-size:13.5px;color:var(--muted);margin:12px 0 4px;line-height:1.6}
+.logplace .la{font-size:14.5px;color:var(--ink);line-height:1.72;white-space:pre-wrap;margin:0}
+.logempty{font-size:14px;color:var(--muted);padding:28px 18px;line-height:1.75}
+.tools{display:flex;gap:7px;flex-wrap:wrap;padding:12px 18px 0}
+.plainbox{width:calc(100% - 36px);margin:10px 18px;font-family:inherit;font-size:13px;line-height:1.7;
+  border:1px solid var(--line);border-radius:2px;padding:12px;background:var(--surface-2);color:var(--ink-2);height:210px}
+.setup{padding:26px 20px;max-width:60ch;margin:0 auto}
+.setup h2{font-family:"Hahmlet","Apple SD Gothic Neo",serif;font-size:20px;font-weight:700;margin:0 0 8px;letter-spacing:-.015em}
+.setup p{font-size:13.5px;line-height:1.75;color:var(--ink-2)}
+.setup code{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:12.5px;background:var(--surface-2);border:1px solid var(--line-soft);padding:2px 6px;border-radius:2px}
+.gmwrap{position:relative;height:100%}
+.mapmsg{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;padding:28px;text-align:center;
+  font-size:14.5px;line-height:1.78;color:var(--muted);background:var(--surface-2)}
+.mapmsg code{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:13px;background:var(--surface);border:1px solid var(--line-soft);padding:2px 6px;border-radius:2px}
+a{color:var(--brand)}a:hover{color:var(--ink)}
+</style>
+</head>
+<body>
+<div id="app">
+  <div class="top">
+    <div class="title"><span>Outsight Tokyo</span>9.8 – 9.11</div>
+    <div class="tabs" id="tabs" role="tablist"></div>
+    <button class="iconbtn on" id="spotBtn" title="도쿄 주요 명소 표시">◇</button>
+    <button class="iconbtn" id="locBtn" title="내 위치">◎</button>
+  </div>
+  <div class="main">
+    <div id="map"></div>
+    <div class="panel"><div id="panelBody"></div></div>
+  </div>
+</div>
+
+<script src="config.js"></script>
+<script src="data.js"></script>
+<script>
+(function(){
+"use strict";
+var CFG=window.OUTSIGHT_CONFIG||{}, D=window.OUTSIGHT_DATA||{};
+var P=D.P||[], L=D.L||[], DAYS=D.DAYS||{};
+var COL={1:"#C22E14",2:"#1D5A96",3:"#855505",4:"#0D6B4E",5:"#63409B"};
+var COL_DARK={1:"#DE4526",2:"#2E7BD4",3:"#A87513",4:"#12876A",5:"#7A50C6"};
+if(window.matchMedia&&window.matchMedia("(prefers-color-scheme: dark)").matches)COL=COL_DARK;
+var CSSCOL={1:"var(--d1)",2:"var(--d2)",3:"var(--d3)",4:"var(--d4)",5:"var(--d5)"};
+var ORDER=["all","1","2","3","5","4","log"];
+var TABLABEL={all:"전체","1":"1일차 9.8","2":"2일차 9.9","3":"3일차 9.10","5":"4일차 A 구라마에","4":"4일차 B 하라주쿠",log:"답사 기록"};
+var DORD={1:1,2:2,3:3,5:4,4:5};
+P.sort(function(a,b){return (DORD[a.d]-DORD[b.d])||(a.n-b.n);});
+
+var panel=document.getElementById("panelBody");
+var current="all", selected=null, selSpot=null, spotsOn=true;
+function esc(s){return String(s).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;");}
+function gmap(q){return "https://www.google.com/maps/search/?api=1&query="+encodeURIComponent(q);}
+function gdir(la,ln){return "https://www.google.com/maps/dir/?api=1&destination="+la+"%2C"+ln+"&travelmode=transit";}
+
+/* ================= 기록 ================= */
+var LSKEY="outsight-tokyo-notes-v1", notes={}, saveTimer=null, saveState="idle", saveMsg="";
+var TOTALQ=P.reduce(function(a,p){return a+p.qs.length;},0);
+/* 기록 열쇠(NOTEBOOK_ID)는 소스에 남기지 않아도 됩니다.
+   주소 뒤에 #id=내열쇠 를 한 번만 붙여 열면 이 기기에 저장되고, 주소창에서는 즉시 지워집니다.
+   저장소를 공개(Public)로 두는 GitHub Pages에서도 열쇠가 노출되지 않습니다. */
+var NBKEY="outsight-notebook-id";
+function notebookId(){
+  var m=(location.hash||"").match(/[#&]id=([A-Za-z0-9_.\-]{4,64})/);
+  if(m){
+    try{localStorage.setItem(NBKEY,m[1]);}catch(e){}
+    try{history.replaceState(null,"",location.pathname+location.search);}catch(e){}
+    return m[1];
+  }
+  try{var v=localStorage.getItem(NBKEY);if(v)return v;}catch(e){}
+  return (CFG.NOTEBOOK_ID||"").trim();
+}
+var NBID=notebookId();
+var SB = (CFG.SUPABASE_URL&&CFG.SUPABASE_ANON_KEY&&NBID) ? {
+  url:CFG.SUPABASE_URL.replace(/\/+$/,""), key:CFG.SUPABASE_ANON_KEY, id:NBID
+} : null;
+var SB_NOKEY = !!(CFG.SUPABASE_URL&&CFG.SUPABASE_ANON_KEY&&!NBID);
+function nkey(p){return p.d+"-"+p.n;}
+function nget(k){if(!notes[k])notes[k]={a:{},memo:"",v:false,t:0};return notes[k];}
+function answered(){var c=0;P.forEach(function(p){var n=notes[nkey(p)];if(!n)return;p.qs.forEach(function(_,i){if((n.a&&n.a[i]||"").trim())c++;});});return c;}
+function hasNote(p){var n=notes[nkey(p)];if(!n)return false;if(n.v||(n.memo||"").trim())return true;
+  return Object.keys(n.a||{}).some(function(k){return (n.a[k]||"").trim();});}
+function readLocal(){try{var r=localStorage.getItem(LSKEY);return r?JSON.parse(r):null;}catch(e){return null;}}
+function writeLocal(){try{localStorage.setItem(LSKEY,JSON.stringify(notes));}catch(e){}}
+function merge(a,b){var o={},k={};[a,b].forEach(function(x){if(x&&typeof x==="object")Object.keys(x).forEach(function(y){k[y]=1;});});
+  Object.keys(k).forEach(function(y){var p=a&&a[y],q=b&&b[y];o[y]=!p?q:!q?p:((q.t||0)>(p.t||0)?q:p);});return o;}
+function setSave(st,msg){saveState=st;saveMsg=msg||"";var el=document.getElementById("saveChip");if(!el)return;
+  el.innerHTML='<span class="savedot '+(st==="idle"?"":st)+'"></span><span>'+esc(msg||"")+'</span><span style="margin-left:auto">'+answered()+" / "+TOTALQ+' 답변</span>';}
+function schedule(ms){writeLocal();if(saveTimer)clearTimeout(saveTimer);saveTimer=setTimeout(push,ms==null?2500:ms);
+  if(SB)setSave("busy","저장 대기 중");}
+function push(){
+  saveTimer=null;writeLocal();
+  if(!SB){setSave(SB_NOKEY?"err":"idle",SB_NOKEY?"기록 열쇠가 없습니다 — 주소 뒤에 #id=내열쇠 를 붙여 한 번 여십시오":"이 기기에만 저장됨");return;}
+  setSave("busy","동기화 중…");
+  fetch(SB.url+"/rest/v1/outsight_notes",{
+    method:"POST",
+    headers:{"apikey":SB.key,"Authorization":"Bearer "+SB.key,"Content-Type":"application/json","Prefer":"resolution=merge-duplicates,return=minimal"},
+    body:JSON.stringify({id:SB.id,data:notes,updated_at:new Date().toISOString()})
+  }).then(function(r){
+    if(r.ok)setSave("ok","저장됨 — 다른 기기에서도 보입니다");
+    else setSave("err","동기화 실패 ("+r.status+") — 이 기기에는 남아 있습니다");
+  }).catch(function(){setSave("err","오프라인 — 이 기기에는 남아 있습니다");});
+}
+function flush(){if(saveTimer){clearTimeout(saveTimer);saveTimer=null;push();}else writeLocal();}
+window.addEventListener("beforeunload",writeLocal);
+document.addEventListener("visibilitychange",function(){if(document.visibilityState==="hidden")flush();});
+function pull(){
+  var local=readLocal();
+  if(!SB){notes=local||{};setSave(SB_NOKEY?"err":"idle",SB_NOKEY?"기록 열쇠가 없습니다 — 주소 뒤에 #id=내열쇠 를 붙여 한 번 여십시오":"이 기기에만 저장됨");render();return;}
+  setSave("busy","불러오는 중…");
+  fetch(SB.url+"/rest/v1/outsight_notes?id=eq."+encodeURIComponent(SB.id)+"&select=data",
+    {headers:{"apikey":SB.key,"Authorization":"Bearer "+SB.key}})
+  .then(function(r){return r.ok?r.json():null;})
+  .then(function(j){
+    var remote=(j&&j[0]&&j[0].data)||null;
+    notes=merge(remote,local)||{};
+    setSave("ok","자동 저장됩니다");render();
+  }).catch(function(){
+    notes=local||{};setSave("err","서버에 연결하지 못했습니다 — 이 기기에만 저장됩니다");render();
+  });
+}
+function logText(){
+  var out=["# Outsight Tokyo 답사 기록","","2026.9.8(화) – 9.11(금)",""],last=null;
+  P.forEach(function(p){
+    if(!hasNote(p))return;
+    if(p.d!==last){last=p.d;out.push("","## "+DAYS[p.d].label+" · "+DAYS[p.d].date+" — "+DAYS[p.d].area,"");}
+    var n=notes[nkey(p)];
+    out.push("### "+p.name+(n.v?"  (다녀옴)":""));
+    p.qs.forEach(function(q,i){var a=(n.a&&n.a[i]||"").trim();if(a)out.push("","**Q. "+q+"**","",a);});
+    if((n.memo||"").trim())out.push("","**그 밖에 본 것**","",n.memo.trim());
+    out.push("");
+  });
+  if(out.length<=4)out.push("아직 기록한 답변이 없습니다.");
+  return out.join("\n");
+}
+function dl(name,text,type){
+  var b=new Blob([text],{type:type||"text/plain;charset=utf-8"});
+  var u=URL.createObjectURL(b),a=document.createElement("a");
+  a.href=u;a.download=name;document.body.appendChild(a);a.click();
+  setTimeout(function(){URL.revokeObjectURL(u);a.remove();},400);
+}
+function buildKML(){
+  function x(t){return String(t).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;");}
+  var o=['<?xml version="1.0" encoding="UTF-8"?>','<kml xmlns="http://www.opengis.net/kml/2.2"><Document>',
+    "<name>Outsight Tokyo 답사</name>"];
+  [1,2,3,5,4].forEach(function(d){
+    var l=P.filter(function(p){return p.d===d;});if(!l.length)return;
+    o.push("<Folder><name>"+x(DAYS[d].label+" "+DAYS[d].date+" · "+DAYS[d].area)+"</name>");
+    l.forEach(function(p){
+      var de=[p.t+" — "+p.one,"",p.jp];if(p.url)de.push("",p.url);
+      o.push("<Placemark><name>"+x(p.n+". "+p.name)+"</name><description>"+x(de.join("\n"))+
+        "</description><Point><coordinates>"+p.lng+","+p.lat+",0</coordinates></Point></Placemark>");
+    });
+    var ln=l.filter(function(p){return !p.opt;});
+    if(ln.length>1)o.push("<Placemark><name>"+x(DAYS[d].label+" 동선")+"</name><LineString><tessellate>1</tessellate><coordinates>"+
+      ln.map(function(p){return p.lng+","+p.lat+",0";}).join(" ")+"</coordinates></LineString></Placemark>");
+    o.push("</Folder>");
+  });
+  o.push("<Folder><name>도쿄 주요 명소</name>");
+  L.forEach(function(s){o.push("<Placemark><name>"+x(s[0])+"</name><description>"+x(s[3]+"\n"+s[4])+
+    "</description><Point><coordinates>"+s[2]+","+s[1]+",0</coordinates></Point></Placemark>");});
+  o.push("</Folder></Document></kml>");
+  return o.join("\n");
+}
+
+/* ================= 구글 지도 ================= */
+var map=null, markers=[], spotMarkers=[], lines={}, meMarker=null, gmReady=false, placesLib=null, svService=null;
+function loadMaps(){
+  if(!CFG.GOOGLE_MAPS_KEY){
+    document.getElementById("map").innerHTML='<div class="mapmsg"><div><b>구글 지도 키가 아직 없습니다.</b><br><br>'+
+      '<code>config.js</code> 파일을 열어 <code>GOOGLE_MAPS_KEY</code> 에<br>API 키를 넣고 새로고침하십시오.<br><br>'+
+      '키가 없어도 목록 · 설명 · 관찰 질문 · 기록은<br>모두 그대로 쓸 수 있습니다.</div></div>';
+    return;
+  }
+  window.__gmInit=initMap;
+  var s=document.createElement("script");
+  s.src="https://maps.googleapis.com/maps/api/js?key="+encodeURIComponent(CFG.GOOGLE_MAPS_KEY)+
+        "&v=weekly&language=ko&region=JP&libraries=places,geometry&callback=__gmInit&loading=async";
+  s.async=true;
+  s.onerror=function(){document.getElementById("map").innerHTML='<div class="mapmsg">구글 지도를 불러오지 못했습니다.<br>API 키와 인터넷 연결을 확인하십시오.</div>';};
+  document.head.appendChild(s);
+}
+window.gm_authFailure=function(){
+  document.getElementById("map").innerHTML='<div class="mapmsg"><b>구글 지도 인증에 실패했습니다.</b><br><br>' +
+    'API 키가 잘못되었거나, Maps JavaScript API가 켜져 있지 않거나,<br>키의 도메인 제한에 이 주소가 빠져 있습니다.<br><br>SETUP.md 1단계를 다시 확인하십시오.</div>';
+};
+function pin(color,label,dim,opt){
+  return {
+    path:google.maps.SymbolPath.CIRCLE, scale:dim?8:12,
+    fillColor:color, fillOpacity:dim?.35:1,
+    strokeColor:"#FCFBF8", strokeWeight:opt?1.6:2.4, strokeOpacity:dim?.4:1
+  };
+}
+function initMap(){
+  gmReady=true;
+  map=new google.maps.Map(document.getElementById("map"),{
+    center:{lat:35.6720,lng:139.7500}, zoom:12,
+    mapTypeControl:false, streetViewControl:true, fullscreenControl:false,
+    zoomControl:true, clickableIcons:true, gestureHandling:"greedy"
+  });
+  svService=new google.maps.StreetViewService();
+  P.forEach(function(p,i){
+    var m=new google.maps.Marker({
+      position:{lat:p.lat,lng:p.lng}, map:map, title:DAYS[p.d].label+" · "+p.name,
+      icon:pin(COL[p.d],String(p.n),false,p.opt),
+      label:{text:String(p.n),color:"#fff",fontSize:"12px",fontWeight:"600",fontFamily:"IBM Plex Sans KR,system-ui,sans-serif"},
+      zIndex:100+i
+    });
+    m.addListener("click",function(){ selected=i; selSpot=null; setTab(String(p.d)); });
+    markers.push(m);
+  });
+  L.forEach(function(s,i){
+    var m=new google.maps.Marker({
+      position:{lat:s[1],lng:s[2]}, map:map, title:s[0],
+      icon:{path:"M 0,-7 7,0 0,7 -7,0 z",fillColor:"#8C8375",fillOpacity:.85,strokeColor:"#FCFBF8",strokeWeight:1.4,scale:1},
+      zIndex:10
+    });
+    m.addListener("click",function(){ selSpot=i; selected=null; render(); focusOn(s[1],s[2],15); });
+    spotMarkers.push(m);
+  });
+  [1,2,3,4,5].forEach(function(d){
+    var pts=P.filter(function(p){return p.d===d&&!p.opt;}).map(function(p){return {lat:p.lat,lng:p.lng};});
+    if(pts.length<2)return;
+    lines[d]=new google.maps.Polyline({path:pts,map:map,strokeColor:COL[d],strokeOpacity:0,strokeWeight:3,
+      icons:[{icon:{path:"M 0,-1 0,1",strokeOpacity:.7,strokeWeight:3,scale:3},offset:"0",repeat:"14px"}]});
+  });
+  applyDay();
+}
+function focusOn(lat,lng,z){ if(!map)return; map.panTo({lat:lat,lng:lng}); if(z&&map.getZoom()<z)map.setZoom(z); }
+function fitDay(d){
+  if(!map)return;
+  var pts=(d==="all")?P:P.filter(function(p){return p.d===+d;});
+  if(!pts.length)return;
+  var b=new google.maps.LatLngBounds();
+  pts.forEach(function(p){b.extend({lat:p.lat,lng:p.lng});});
+  if(d==="all")L.forEach(function(s){b.extend({lat:s[1],lng:s[2]});});
+  map.fitBounds(b,{top:60,bottom:60,left:60,right:60});
+}
+function applyDay(){
+  if(!gmReady)return;
+  var all=(current==="all"||current==="log");
+  P.forEach(function(p,i){
+    var on=all||p.d===+current;
+    markers[i].setIcon(pin(COL[p.d],String(p.n),!on,p.opt));
+    markers[i].setOpacity(on?1:.45);
+    markers[i].setZIndex(on?(100+i):5);
+  });
+  spotMarkers.forEach(function(m){m.setMap(spotsOn?map:null);});
+  [1,2,3,4,5].forEach(function(d){
+    if(!lines[d])return;
+    lines[d].setOptions({icons:[{icon:{path:"M 0,-1 0,1",
+      strokeOpacity:(all?.30:(String(d)===current?.75:.06)),strokeWeight:3,scale:3},offset:"0",repeat:"14px"}]});
+  });
+  if(current!=="log")fitDay(current);
+}
+
+/* ---- 스트리트뷰 & 장소 사진 ---- */
+var PHOTOKEY="outsight-photo-cache-v1";
+function photoCache(){try{return JSON.parse(localStorage.getItem(PHOTOKEY)||"{}");}catch(e){return {};}}
+function photoSave(c){try{localStorage.setItem(PHOTOKEY,JSON.stringify(c));}catch(e){}}
+function mountStreetView(p){
+  var el=document.getElementById("svPano");
+  if(!el||!gmReady||!CFG.STREET_VIEW||!svService)return;
+  svService.getPanorama({location:{lat:p.lat,lng:p.lng},radius:90,source:"outdoor"},function(data,status){
+    if(status!=="OK"||!data||!data.location){ var w=document.getElementById("svWrap"); if(w)w.remove(); return; }
+    var heading=0;
+    try{ heading=google.maps.geometry.spherical.computeHeading(
+      data.location.latLng, new google.maps.LatLng(p.lat,p.lng)); }catch(e){}
+    new google.maps.StreetViewPanorama(el,{
+      pano:data.location.pano, addressControl:false, linksControl:false, panControl:false,
+      fullscreenControl:false, enableCloseButton:false, motionTracking:false,
+      pov:{heading:heading,pitch:2}, zoom:0
+    });
+  });
+}
+function mountPhotos(p){
+  var slot=document.getElementById("photoSlot");
+  if(!slot||!gmReady||!CFG.PLACE_PHOTOS||!p.q)return;
+  var cache=photoCache(), hit=cache[p.q];
+  if(hit&&hit.exp>Date.now()){ paint(hit.urls,hit.meta); return; }
+  google.maps.importLibrary("places").then(function(lib){
+    return lib.Place.searchByText({
+      textQuery:p.q, fields:["photos","displayName","rating","userRatingCount"],
+      maxResultCount:1, language:"ko", region:"JP",
+      locationBias:{center:{lat:p.lat,lng:p.lng},radius:250}
+    });
+  }).then(function(res){
+    var pl=res&&res.places&&res.places[0];
+    if(!pl||!pl.photos||!pl.photos.length){slot.remove();return;}
+    var urls=pl.photos.slice(0,2).map(function(ph){return ph.getURI({maxHeight:520,maxWidth:700});});
+    var meta=pl.rating?("★ "+pl.rating.toFixed(1)+(pl.userRatingCount?" · 리뷰 "+pl.userRatingCount:"")):"";
+    var c=photoCache(); c[p.q]={urls:urls,meta:meta,exp:Date.now()+1000*60*60*24*3}; photoSave(c);
+    paint(urls,meta);
+  }).catch(function(){ if(slot)slot.remove(); });
+  function paint(urls,meta){
+    if(!urls||!urls.length){slot.remove();return;}
+    slot.innerHTML='<h4>구글 지도 사진'+(meta?' <span style="text-transform:none;letter-spacing:0;color:var(--muted)">'+esc(meta)+'</span>':'')+'</h4>'+
+      '<div class="shots">'+urls.map(function(u,i){return '<div class="shot"><img loading="lazy" alt="장소 사진 '+(i+1)+'" src="'+u+'"></div>';}).join("")+'</div>';
+  }
+}
+
+/* ================= 패널 ================= */
+function overview(day){
+  var list=(day==="all")?P:P.filter(function(p){return p.d===+day;});
+  var h='<div class="savechip" id="saveChip"></div>';
+  if(day==="all"){
+    h+='<div class="phead"><span class="datechip">2026.9.8(화) – 9.11(금)</span><h2>전체 일정 '+P.length+'곳</h2>'+
+       '<p>지도의 번호를 누르거나 아래 목록에서 고르십시오. 마름모는 도쿄 주요 명소입니다.</p></div>';
+  }else{
+    var Y=DAYS[day];
+    h+='<div class="phead"><span class="datechip">'+Y.date+'</span><h2>'+Y.label+' · '+esc(Y.area)+'</h2>'+
+       '<p>'+esc(Y.theme)+'</p>'+(Y.official?'<p class="official"><b>공식 일정</b> '+esc(Y.official)+'</p>':'')+'</div>';
+  }
+  var rows="",last=null;
+  list.forEach(function(p){
+    var i=P.indexOf(p);
+    if(day==="all"&&p.d!==last){last=p.d;
+      rows+='<li><div class="row head"><span class="t">'+DAYS[p.d].date+'</span><span class="n" style="border-color:'+CSSCOL[p.d]+'"></span>'+
+            '<span class="body"><strong style="color:'+CSSCOL[p.d]+'">'+DAYS[p.d].label+' — '+esc(DAYS[p.d].area)+'</strong></span></div></li>';}
+    rows+='<li><button class="row" data-i="'+i+'"><span class="t">'+esc(p.t)+'</span>'+
+          '<span class="n" style="background:'+CSSCOL[p.d]+(p.opt?';opacity:.55':'')+'">'+p.n+'</span>'+
+          '<span class="body"><strong>'+esc(p.name)+(hasNote(p)?'<span class="hasnote"></span>':'')+'</strong><em>'+esc(p.one)+'</em></span></button></li>';
+  });
+  return h+'<ol class="tl">'+rows+'</ol>';
+}
+function detail(i){
+  var p=P[i],Y=DAYS[p.d],k=nkey(p),n=notes[k]||{a:{},memo:"",v:false};
+  var h='<div class="savechip" id="saveChip"></div>';
+  h+='<button class="back" id="backBtn">← '+Y.label+' 목록으로</button><div class="dt">';
+  h+='<div style="display:flex;align-items:center;gap:10px"><span class="dchip" style="background:var(--d'+p.d+'-soft);color:'+CSSCOL[p.d]+'">'+Y.date+' · '+esc(p.t)+'</span>'+
+     '<label class="visited"><input type="checkbox" id="visitedBox"'+(n.v?" checked":"")+'> 다녀왔음</label></div>';
+  h+='<h3>'+esc(p.name)+'</h3><p class="jp">'+esc(p.jp)+'</p>';
+  h+='<p class="oneline" style="border-left-color:'+CSSCOL[p.d]+'">'+esc(p.one)+'</p>';
+  if(CFG.STREET_VIEW)h+='<div id="svWrap"><h4>거리에서 본 모습</h4><div id="svPano"></div></div>';
+  if(CFG.PLACE_PHOTOS)h+='<div id="photoSlot"></div>';
+  if(p.art){
+    h+='<h4>알아보기 위한 도식</h4><div class="art" style="color:'+CSSCOL[p.d]+'">';
+    p.art.forEach(function(a){h+='<figure class="tile"><svg viewBox="0 0 120 80">'+a[0]+'</svg><figcaption>'+a[1]+'</figcaption></figure>';});
+    h+='</div>';
+  }
+  h+='<div class="links">';
+  if(p.q)h+='<a class="lk" href="'+gmap(p.q)+'" target="_blank" rel="noopener">사진 · 리뷰 ↗</a>';
+  h+='<a class="lk" href="'+gdir(p.lat,p.lng)+'" target="_blank" rel="noopener">길찾기 ↗</a>';
+  if(p.url)h+='<a class="lk" href="'+p.url+'" target="_blank" rel="noopener">공식 사이트 ↗</a>';
+  h+='</div>';
+  if(p.facts){h+='<h4>기본 정보</h4><dl class="facts">';p.facts.forEach(function(f){h+='<dt>'+esc(f[0])+'</dt><dd>'+f[1]+'</dd>';});h+='</dl>';}
+  h+='<h4>어떤 곳인가</h4><p class="desc">'+esc(p.desc)+'</p>';
+  if(p.subs){h+='<h4>안에서 볼 것</h4><ul class="subs">';p.subs.forEach(function(s){h+='<li><b>'+esc(s[0])+'</b> — '+esc(s[1])+'</li>';});h+='</ul>';}
+  h+='<h4>관찰 질문 — 다녀와서 답을 적어두십시오</h4><ol class="qs">';
+  p.qs.forEach(function(q,qi){
+    var a=(n.a&&n.a[qi])||"";
+    h+='<li'+(a.trim()?' class="answered"':'')+'>'+esc(q)+
+       '<textarea class="ansbox'+(a.trim()?" filled":"")+'" data-k="'+k+'" data-q="'+qi+'" rows="1" placeholder="여기에 적으면 기록으로 남습니다"></textarea></li>';
+  });
+  h+='</ol><h4>그 밖에 본 것</h4><textarea class="ansbox'+((n.memo||"").trim()?" filled":"")+'" data-k="'+k+'" data-q="memo" rows="1" placeholder="사진으로 남긴 것, 인상 깊었던 디테일, 떠오른 아이디어"></textarea>';
+  if(p.opt)h+='<div class="warn">확정 일정이 아니라 선택 방문지입니다.</div>';
+  return h+'</div>';
+}
+function spotDetail(i){
+  var s=L[i];
+  return '<div class="savechip" id="saveChip"></div><button class="back" id="backBtn">← 목록으로</button><div class="dt">'+
+    '<span class="dchip" style="background:var(--surface-2);color:var(--muted)">도쿄 주요 명소</span>'+
+    '<h3>'+esc(s[0])+'</h3><p class="oneline">'+esc(s[3])+'</p>'+
+    '<div class="links"><a class="lk" href="'+gmap(s[0])+'" target="_blank" rel="noopener">사진 · 리뷰 ↗</a>'+
+    '<a class="lk" href="'+gdir(s[1],s[2])+'" target="_blank" rel="noopener">길찾기 ↗</a></div>'+
+    '<h4>가는 법</h4><p class="desc">'+esc(s[4])+'</p>'+
+    '<div class="warn">프로그램 일정에 포함된 곳이 아니라 위치 감각을 위한 참조입니다.</div></div>';
+}
+function logPanel(){
+  var done=answered(),pct=TOTALQ?Math.round(done/TOTALQ*100):0;
+  var vis=P.filter(function(p){return (notes[nkey(p)]||{}).v;}).length;
+  var h='<div class="savechip" id="saveChip"></div>';
+  h+='<div class="phead"><span class="datechip">2026.9.8(화) – 9.11(금)</span><h2>답사 기록</h2>'+
+     '<p>장소를 눌러 관찰 질문에 답을 적으면 여기에 모입니다.</p>'+
+     '<div class="prog"><span class="progn">답변 '+done+'/'+TOTALQ+'</span><div class="progbar"><i style="width:'+pct+'%"></i></div><span class="progn">다녀온 곳 '+vis+'</span></div></div>';
+  h+='<div class="tools"><button class="lk" id="tCopy">전체 복사</button><button class="lk" id="tMd">마크다운 저장</button>'+
+     '<button class="lk" id="tKml">KML 저장</button><button class="lk" id="tPlain">텍스트로 보기</button></div><div id="plainSlot"></div>';
+  var body="",last=null,any=false;
+  P.forEach(function(p){
+    if(!hasNote(p))return;any=true;
+    if(p.d!==last){last=p.d;body+='<div class="logday">'+DAYS[p.d].date+' · '+esc(DAYS[p.d].area)+'</div>';}
+    var n=notes[nkey(p)];
+    body+='<div class="logplace"><h5>'+esc(p.name)+(n.v?' <span class="hasnote"></span>':'')+'</h5>';
+    var w=false;
+    p.qs.forEach(function(q,qi){var a=(n.a&&n.a[qi]||"").trim();if(!a)return;w=true;
+      body+='<p class="lq">Q. '+esc(q)+'</p><p class="la">'+esc(a)+'</p>';});
+    if((n.memo||"").trim()){w=true;body+='<p class="lq">그 밖에 본 것</p><p class="la">'+esc(n.memo.trim())+'</p>';}
+    if(!w)body+='<p class="lq">다녀왔음만 체크되어 있습니다.</p>';
+    body+='</div>';
+  });
+  return h+(any?'<div class="logwrap">'+body+'</div>'
+    :'<p class="logempty">아직 기록이 없습니다. 위 탭에서 장소를 고르고, 관찰 질문 아래 칸에 답을 적어 보십시오. 적는 즉시 저장됩니다.</p>');
+}
+function grow(t){t.style.height="auto";t.style.height=Math.max(38,t.scrollHeight+2)+"px";}
+function wire(){
+  Array.prototype.forEach.call(panel.querySelectorAll(".row[data-i]"),function(b){
+    b.addEventListener("click",function(){
+      selected=+b.getAttribute("data-i");selSpot=null;render();
+      var p=P[selected];focusOn(p.lat,p.lng,16);
+    });
+  });
+  var bk=panel.querySelector("#backBtn");
+  if(bk)bk.addEventListener("click",function(){selected=null;selSpot=null;render();applyDay();});
+  Array.prototype.forEach.call(panel.querySelectorAll(".ansbox"),function(t){
+    var k=t.getAttribute("data-k"),q=t.getAttribute("data-q"),n=nget(k);
+    t.value=(q==="memo")?(n.memo||""):((n.a&&n.a[q])||"");grow(t);
+    t.addEventListener("input",function(){
+      var m=nget(k);if(q==="memo")m.memo=t.value;else{m.a=m.a||{};m.a[q]=t.value;}
+      m.t=Date.now();t.classList.toggle("filled",!!t.value.trim());
+      var li=t.closest("li");if(li)li.classList.toggle("answered",!!t.value.trim());
+      grow(t);schedule();
+    });
+    t.addEventListener("blur",function(){if(saveTimer)flush();});
+  });
+  var vb=panel.querySelector("#visitedBox");
+  if(vb)vb.addEventListener("change",function(){
+    var p=P[selected];if(!p)return;var m=nget(nkey(p));m.v=vb.checked;m.t=Date.now();schedule(600);
+  });
+  var c=panel.querySelector("#tCopy");
+  if(c)c.addEventListener("click",function(){
+    var t=logText();
+    if(navigator.clipboard&&navigator.clipboard.writeText)
+      navigator.clipboard.writeText(t).then(function(){c.textContent="복사했습니다";setTimeout(function(){c.textContent="전체 복사";},1600);},plain);
+    else plain();
+    function plain(){showPlain(t);}
+  });
+  var md=panel.querySelector("#tMd");
+  if(md)md.addEventListener("click",function(){dl("outsight-tokyo-답사기록.md",logText(),"text/markdown;charset=utf-8");});
+  var km=panel.querySelector("#tKml");
+  if(km)km.addEventListener("click",function(){dl("outsight-tokyo.kml",buildKML(),"application/vnd.google-earth.kml+xml");});
+  var pl=panel.querySelector("#tPlain");
+  if(pl)pl.addEventListener("click",function(){showPlain(logText());});
+}
+function showPlain(t){
+  var s=panel.querySelector("#plainSlot");if(!s)return;
+  s.innerHTML='<textarea class="plainbox" readonly></textarea>';
+  var a=s.querySelector("textarea");a.value=t;a.focus();a.select();
+}
+function render(){
+  panel.innerHTML = (current==="log") ? logPanel()
+    : (selSpot!=null ? spotDetail(selSpot) : (selected==null ? overview(current) : detail(selected)));
+  setSave(saveState,saveMsg);
+  wire();
+  panel.scrollTop=0;
+  if(selected!=null&&selSpot==null&&current!=="log"){ mountStreetView(P[selected]); mountPhotos(P[selected]); }
+}
+
+/* ================= 탭 ================= */
+function setTab(d){
+  current=d; if(d!=="log")selSpot=null;
+  Array.prototype.forEach.call(document.querySelectorAll(".tab"),function(t){
+    t.setAttribute("aria-selected", t.getAttribute("data-day")===d ? "true":"false");
+  });
+  render(); applyDay();
+  if(selected!=null&&gmReady&&d!=="log"){var p=P[selected];focusOn(p.lat,p.lng,16);}
+}
+(function buildTabs(){
+  var w=document.getElementById("tabs");
+  ORDER.forEach(function(d){
+    var b=document.createElement("button");
+    b.className="tab";b.setAttribute("role","tab");b.setAttribute("data-day",d);
+    b.setAttribute("aria-selected",d==="all"?"true":"false");
+    if(DAYS[d])b.innerHTML='<span class="dot" style="background:'+CSSCOL[d]+'"></span>'+TABLABEL[d];
+    else b.textContent=TABLABEL[d];
+    b.addEventListener("click",function(){selected=null;setTab(d);});
+    w.appendChild(b);
+  });
+})();
+document.getElementById("spotBtn").addEventListener("click",function(){
+  spotsOn=!spotsOn;this.classList.toggle("on",spotsOn);applyDay();
+});
+document.getElementById("locBtn").addEventListener("click",function(){
+  if(!navigator.geolocation||!gmReady)return;
+  var b=this;b.textContent="…";
+  navigator.geolocation.getCurrentPosition(function(pos){
+    b.textContent="◎";
+    var ll={lat:pos.coords.latitude,lng:pos.coords.longitude};
+    if(meMarker)meMarker.setPosition(ll);
+    else meMarker=new google.maps.Marker({position:ll,map:map,zIndex:999,
+      icon:{path:google.maps.SymbolPath.CIRCLE,scale:8,fillColor:"#1A73E8",fillOpacity:1,strokeColor:"#fff",strokeWeight:3},
+      title:"내 위치"});
+    map.panTo(ll);map.setZoom(16);
+  },function(){b.textContent="◎";alert("현재 위치를 가져오지 못했습니다. 브라우저의 위치 권한을 확인하십시오.");},
+  {enableHighAccuracy:true,timeout:8000});
+});
+
+/* ================= 시작 ================= */
+render();
+loadMaps();
+pull();
+})();
+</script>
+</body>
+</html>
