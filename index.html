@@ -155,6 +155,18 @@ svg text{font-family:"IBM Plex Sans KR","Apple SD Gothic Neo",system-ui,sans-ser
 .official{font-size:13px;line-height:1.7;color:var(--muted);margin:12px 0 0;padding:11px 13px;
   border-radius:2px;background:var(--surface);border:1px solid var(--line-soft)}
 .official b{color:var(--ink);font-weight:600}
+.basebox{margin:12px 0 4px;border:1px solid var(--line);border-radius:2px;background:var(--surface)}
+.basebox>summary{cursor:pointer;list-style:none;padding:12px 13px;display:flex;align-items:baseline;
+  gap:9px;font-size:13.5px;min-height:44px;box-sizing:border-box}
+.basebox>summary::-webkit-details-marker{display:none}
+.basebox>summary::after{content:"＋";margin-left:auto;color:var(--muted);font-size:14px}
+.basebox[open]>summary::after{content:"－"}
+.basebox>summary b{color:var(--ink);font-weight:600}
+.basebox>summary span{color:var(--muted);font-size:12.5px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.basebody{padding:2px 13px 14px;border-top:1px solid var(--line-soft)}
+.basebody h4{margin:14px 0 7px}
+.basebody .facts{margin:0}
+.basebody .subs{margin:6px 0 0}
 ol.tl{list-style:none;margin:0;padding:4px 0}
 ol.tl li{border-bottom:1px solid var(--line-soft)}
 ol.tl li:last-child{border-bottom:none}
@@ -295,6 +307,41 @@ a{color:var(--brand)}a:hover{color:var(--ink)}
 "use strict";
 var CFG=window.OUTSIGHT_CONFIG||{}, D=window.OUTSIGHT_DATA||{};
 var P=D.P||[], S=D.S||[], DAYS=D.DAYS||{};   /* D.L(도쿄 주요 명소)는 더 이상 쓰지 않습니다 */
+/* ── 숙소·공항 고정 지점과 항공 정보 (2026.8.27 · 회사 노션 「호텔 및 항공」 반영) ──
+   data.js가 아니라 여기에 둔 이유: data.js는 한 줄짜리 거대 파일이라 손대기 어렵습니다.
+   나중에 data.js로 옮기고 싶으면 D.BASE / D.FLIGHT 에 넣으면 그쪽이 우선합니다. */
+var BASE = (D.BASE && D.BASE.length) ? D.BASE : [
+ {"k":"hotel","label":"숙소","name":"Hotel Villa Fontaine Grand Shiodome",
+  "jp":"ヴィラフォンテーヌ グランド 東京汐留 / 東新橋1-9-2",
+  "lat":35.661968,"lng":139.759888,
+  "facts":[
+    ["주소","〒105-0021 Tokyo, Minato City, Higashishinbashi 1-9-2"],
+    ["연락처","+81 3-3569-2220"],
+    ["가장 가까운 역","오에도선·유리카모메 <b>시오도메역</b> 직결 · JR/긴자선/아사쿠사선 <b>신바시역</b> 도보 5분"]],
+  "moves":[
+    ["1일차 긴자·유라쿠초","도보 12~15분 (또는 긴자선 신바시→긴자 1정거장)"],
+    ["4일차 안 A 구라마에","오에도선 시오도메→구라마에 <b>직통·환승 없음</b> 약 15분. 기요스미시라카와도 같은 노선"],
+    ["4일차 안 B 하라주쿠","신바시역 JR 야마노테선 직통 약 20분"],
+    ["하네다 제3터미널","신바시역 아사쿠사선 에어포트쾌특 직통 약 30분"]],
+  "q":"Hotel Villa Fontaine Grand Shiodome"},
+ {"k":"air","label":"공항","name":"하네다공항 제3터미널 (국제선)",
+  "jp":"羽田空港 第3ターミナル",
+  "lat":35.5439,"lng":139.7682,
+  "facts":[
+    ["귀국일","9.11(금) 18:00 도착 · 19:55 출발 (KE2104)"],
+    ["접근","신바시역 아사쿠사선 직통 약 30분 · 구라마에역에서도 직통 45분"]],
+  "q":"Haneda Airport Terminal 3"}
+];
+var FLIGHT = D.FLIGHT || {
+ "out":{"d":"9.8 (화)","code":"KE2101","from":"김포 09:00","to":"하네다 11:20"},
+ "ret":{"d":"9.11 (금)","code":"KE2104","from":"하네다 19:55","to":"김포 22:15"},
+ "tips":[
+  "<b>사전 체크인</b> — 출발 48시간~1시간 전 대한항공 앱·홈페이지에서 가능합니다. 모바일 탑승권을 받으면 카운터를 거치지 않고 바로 출국장으로 가고, 위탁 수하물만 전용 카운터에 부치면 됩니다. 다만 단체 항공권은 상황에 따라 사전 체크인이 제한될 수 있습니다.",
+  "<b>현장 체크인</b> — 김포공항 셀프 체크인 키오스크에서 여권을 인식시키면 좌석 선택과 탑승권 발급이 됩니다. 사전 체크인을 못 했어도 동일하게 진행됩니다."
+ ],
+ "note":"이동 소요시간은 추정치입니다. 당일 Yahoo!路線情報으로 재확인하십시오."
+};
+var baseMarkers=[], baseInfo=null;
 var COL={1:"#C22E14",2:"#1D5A96",3:"#855505",4:"#0D6B4E",5:"#63409B",spot:"#FF9500"};
 var COL_DARK={1:"#DE4526",2:"#2E7BD4",3:"#A87513",4:"#12876A",5:"#7A50C6",spot:"#FFA733"};
 if(window.matchMedia&&window.matchMedia("(prefers-color-scheme: dark)").matches)COL=COL_DARK;
@@ -496,6 +543,25 @@ function initMap(){
     m.addListener("click",function(){ selSpot=i; selected=null; setTab("spot"); });
     spotMarkers.push(m);
   });
+  /* 숙소·공항은 특정 일자에 속하지 않으므로 항상 표시합니다 */
+  baseInfo=new google.maps.InfoWindow();
+  BASE.forEach(function(b){
+    var m=new google.maps.Marker({
+      position:{lat:b.lat,lng:b.lng}, map:map, title:b.label+" · "+b.name,
+      icon:{path:google.maps.SymbolPath.CIRCLE,scale:11,fillColor:"#2C2A26",fillOpacity:1,
+            strokeColor:"#FCFBF8",strokeWeight:2.4},
+      label:{text:(b.k==="hotel"?"H":"✈"),color:"#fff",fontSize:"12px",fontWeight:"700",
+             fontFamily:"IBM Plex Sans KR,system-ui,sans-serif"},
+      zIndex:400
+    });
+    m.addListener("click",function(){
+      baseInfo.setContent('<div style="font:14px/1.5 IBM Plex Sans KR,system-ui,sans-serif;max-width:230px">'+
+        '<b>'+esc(b.name)+'</b><br><span style="color:#6B665C;font-size:12.5px">'+esc(b.jp)+'</span><br>'+
+        '<a href="'+gdir(b.lat,b.lng)+'" target="_blank" rel="noopener">길찾기 ↗</a></div>');
+      baseInfo.open(map,m);
+    });
+    baseMarkers.push(m);
+  });
   [1,2,3,4,5].forEach(function(d){
     var pts=P.filter(function(p){return p.d===d&&!p.opt;}).map(function(p){return {lat:p.lat,lng:p.lng};});
     if(pts.length<2)return;
@@ -581,16 +647,53 @@ function mountPhotos(p){
 }
 
 /* ================= 패널 ================= */
+/* 숙소·항공 카드 — 회사 노션 「호텔 및 항공」 내용 */
+function baseCard(){
+  var H=null,A=null;
+  BASE.forEach(function(b){ if(b.k==="hotel")H=b; if(b.k==="air")A=b; });
+  if(!H&&!FLIGHT)return "";
+  var h='<details class="basebox"><summary><b>숙소 · 항공</b><span>'+
+        (H?esc(H.name):"")+'</span></summary><div class="basebody">';
+  if(FLIGHT){
+    h+='<h4>항공</h4><dl class="facts">'+
+       '<dt>출국</dt><dd><b>'+esc(FLIGHT.out.code)+'</b> · '+esc(FLIGHT.out.d)+' '+esc(FLIGHT.out.from)+' → '+esc(FLIGHT.out.to)+'</dd>'+
+       '<dt>귀국</dt><dd><b>'+esc(FLIGHT.ret.code)+'</b> · '+esc(FLIGHT.ret.d)+' '+esc(FLIGHT.ret.from)+' → '+esc(FLIGHT.ret.to)+'</dd></dl>';
+    h+='<ul class="subs">';
+    FLIGHT.tips.forEach(function(t){h+='<li>'+t+'</li>';});
+    h+='</ul>';
+  }
+  if(H){
+    h+='<h4>숙소</h4><p class="jp" style="margin:0 0 2px"><b style="font-size:15px;color:var(--ink)">'+esc(H.name)+'</b></p>'+
+       '<p class="jp">'+esc(H.jp)+'</p>';
+    h+='<div class="links"><a class="lk" href="'+gmap(H.q)+'" target="_blank" rel="noopener">사진 · 리뷰 ↗</a>'+
+       '<a class="lk" href="'+gdir(H.lat,H.lng)+'" target="_blank" rel="noopener">길찾기 ↗</a>'+
+       '<a class="lk" href="tel:+81335692220">전화 걸기 ↗</a></div>';
+    h+='<dl class="facts">';
+    H.facts.forEach(function(f){h+='<dt>'+esc(f[0])+'</dt><dd>'+f[1]+'</dd>';});
+    h+='</dl><h4>숙소에서 가는 길</h4><dl class="facts">';
+    H.moves.forEach(function(f){h+='<dt>'+esc(f[0])+'</dt><dd>'+f[1]+'</dd>';});
+    h+='</dl>';
+  }
+  if(A){
+    h+='<h4>귀국 공항</h4><dl class="facts">';
+    A.facts.forEach(function(f){h+='<dt>'+esc(f[0])+'</dt><dd>'+f[1]+'</dd>';});
+    h+='</dl>';
+  }
+  if(FLIGHT&&FLIGHT.note)h+='<div class="warn">'+esc(FLIGHT.note)+'</div>';
+  return h+'</div></details>';
+}
 function overview(day){
   var list=(day==="all")?P:P.filter(function(p){return p.d===+day;});
   var h='<div class="savechip" id="saveChip"></div>';
   if(day==="all"){
     h+='<div class="phead"><span class="datechip">2026.9.8(화) – 9.11(금)</span><h2>전체 일정 '+P.length+'곳</h2>'+
-       '<p>지도의 번호를 누르거나 아래 목록에서 고르십시오.</p></div>';
+       '<p>지도의 번호를 누르거나 아래 목록에서 고르십시오. 검은 <b>H</b>는 숙소, <b>✈</b>는 하네다공항입니다.</p></div>';
+    h+=baseCard();
   }else{
     var Y=DAYS[day];
     h+='<div class="phead"><span class="datechip">'+Y.date+'</span><h2>'+Y.label+' · '+esc(Y.area)+'</h2>'+
        '<p>'+esc(Y.theme)+'</p>'+(Y.official?'<p class="official"><b>공식 일정</b> '+esc(Y.official)+'</p>':'')+'</div>';
+    h+=baseCard();
   }
   var rows="",last=null;
   list.forEach(function(p){
