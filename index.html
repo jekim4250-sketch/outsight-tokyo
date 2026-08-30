@@ -95,7 +95,6 @@ svg text{font-family:"IBM Plex Sans KR","Apple SD Gothic Neo",system-ui,sans-ser
 .tab[data-day="2"][aria-selected=true]{background:var(--d2)}
 .tab[data-day="3"][aria-selected=true]{background:var(--d3)}
 .tab[data-day="4"][aria-selected=true]{background:var(--d4)}
-.tab[data-day="5"][aria-selected=true]{background:var(--d5)}
 .tab[data-day=spot][aria-selected=true]{background:var(--sp);color:#3A1E00}
 .tab[data-day=spot][aria-selected=true] .lb i{opacity:.75}
 .tab[data-day=log]{border-color:var(--ink-2);background:var(--surface-2);color:var(--ink)}
@@ -346,9 +345,9 @@ var COL={1:"#C22E14",2:"#1D5A96",3:"#855505",4:"#0D6B4E",5:"#63409B",spot:"#FF95
 var COL_DARK={1:"#DE4526",2:"#2E7BD4",3:"#A87513",4:"#12876A",5:"#7A50C6",spot:"#FFA733"};
 if(window.matchMedia&&window.matchMedia("(prefers-color-scheme: dark)").matches)COL=COL_DARK;
 var CSSCOL={1:"var(--d1)",2:"var(--d2)",3:"var(--d3)",4:"var(--d4)",5:"var(--d5)",spot:"var(--sp-ink)"};
-var ORDER=["all","1","2","3","5","4","spot","log"];
-var TABLABEL={all:"전체","1":"1일차","2":"2일차","3":"3일차","5":"4일차 A","4":"4일차 B",spot:"여행 명소",log:"답사 기록"};
-var TABSUB  ={"1":"9.8","2":"9.9","3":"9.10","5":"구라마에","4":"하라주쿠",spot:"프로그램 외"};
+var ORDER=["all","1","2","3","4","spot","log"];
+var TABLABEL={all:"전체","1":"1일차","2":"2일차","3":"3일차","4":"4일차",spot:"여행 명소",log:"답사 기록"};
+var TABSUB  ={"1":"9.8","2":"9.9","3":"9.10","4":"9.11",spot:"프로그램 외"};
 var DORD={1:1,2:2,3:3,5:4,4:5};
 P.sort(function(a,b){return (DORD[a.d]-DORD[b.d])||(a.n-b.n);});
 
@@ -562,7 +561,7 @@ function initMap(){
     });
     baseMarkers.push(m);
   });
-  [1,2,3,4,5].forEach(function(d){
+  [1,2,3,4].forEach(function(d){
     var pts=P.filter(function(p){return p.d===d&&!p.opt;}).map(function(p){return {lat:p.lat,lng:p.lng};});
     if(pts.length<2)return;
     lines[d]=new google.maps.Polyline({path:pts,map:map,strokeColor:COL[d],strokeOpacity:0,strokeWeight:3,
@@ -593,7 +592,7 @@ function applyDay(){
     var on=isSpot||current==="all";
     m.setIcon(spin(!on)); m.setOpacity(on?1:.4); m.setZIndex(on?(60+i):4);
   });
-  [1,2,3,4,5].forEach(function(d){
+  [1,2,3,4].forEach(function(d){
     if(!lines[d])return;
     lines[d].setOptions({icons:[{icon:{path:"M 0,-1 0,1",
       strokeOpacity:(all?.30:(String(d)===current?.75:.06)),strokeWeight:3,scale:3},offset:"0",repeat:"14px"}]});
